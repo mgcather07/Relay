@@ -63,10 +63,11 @@ function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
 }
 
 export default function Settings() {
-  const { state, setState, toast, testConn, setLdap, setSql } = useRelay()
+  const { state, setState, toast, testConn, setLdap, setSql, caps } = useRelay()
   const phone = useIsPhone()
   const s = state
-  const sec = s.setSection
+  const allowed = caps().settingsSections.length ? caps().settingsSections : SECTIONS
+  const sec = allowed.includes(s.setSection) ? s.setSection : allowed[0]
 
   const ldapStatus = s.ldap.status
   const ldapConn = {
@@ -134,7 +135,7 @@ export default function Settings() {
       {/* Nav */}
       <div style={{ flex: phone ? '1 1 100%' : '1 1 200px', minWidth: phone ? 0 : 200, maxWidth: phone ? '100%' : 216, display: 'flex', flexDirection: 'column', gap: 2 }}>
         <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: '-.3px', padding: '0 10px 12px' }}>Settings</div>
-        {SECTIONS.map((x) => {
+        {allowed.map((x) => {
           const active = sec === x
           return (
             <div

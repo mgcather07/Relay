@@ -5,11 +5,15 @@ import { sla, prioColor, statusTone, dur, kb, type Ticket } from '../lib/data'
 import { useIsPhone } from '../lib/useMediaQuery'
 
 export default function Portal() {
-  const { state, setState, agent, submitPortal, toast, slaWarnMinutes } = useRelay()
+  const { state, setState, agent, submitPortal, toast, slaWarnMinutes, currentUser } = useRelay()
   const phone = useIsPhone()
   const s = state
+  const me = currentUser()
+  const firstName = (me?.name || 'there').split(' ')[0]
 
-  const portalMine = s.tickets.filter((x) => x.requester === 'Marcus Cathey')
+  const portalMine = s.tickets.filter((x) => x.requester === (me?.name || 'Marcus Cathey'))
+  const openCount = portalMine.filter((x) => x.status !== 'Resolved').length
+  const greeting = `Hey ${firstName} — ${openCount} ${openCount === 1 ? 'request' : 'requests'} open`
   const pdT = s.tickets.find((x) => x.id === s.portalOpenId) || portalMine[0] || ({} as Ticket)
   const pdSla = pdT.due ? sla(pdT, s.now, slaWarnMinutes) : { text: '—', color: 'var(--ink-2)' as string }
 
@@ -27,7 +31,7 @@ export default function Portal() {
             <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 'var(--tracking-label)', color: 'var(--ink-gray)', textTransform: 'uppercase' }}>
               Relay help center
             </div>
-            <div style={{ fontSize: phone ? 24 : 28, fontWeight: 800, letterSpacing: '-.5px', marginTop: 6 }}>Hey Marcus — 2 requests open</div>
+            <div style={{ fontSize: phone ? 24 : 28, fontWeight: 800, letterSpacing: '-.5px', marginTop: 6 }}>{greeting}</div>
             <div style={{ fontSize: 13.5, color: 'var(--ink-2)', marginTop: 4 }}>Track what you've asked for, or start something new.</div>
           </div>
           <Button shape="pill" size="sm" onClick={() => setState({ portalPage: 'new' })} icon={icons.plus}>

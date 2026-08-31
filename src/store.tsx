@@ -7,8 +7,12 @@ import {
   onCallFor,
   monday,
   dur,
+  personaById,
+  capsFor,
   type Ticket,
   type ThreadMessage,
+  type Persona,
+  type Caps,
 } from './lib/data'
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -42,6 +46,7 @@ export interface PortalForm {
 }
 
 export interface RelayState {
+  currentUserId: string | null
   surface: 'Desk' | 'Portal'
   page: 'queue' | 'detail' | 'dashboard' | 'oncall' | 'settings'
   view: string
@@ -83,6 +88,7 @@ const SLA_WARN_MINUTES = 60
 
 function initialState(): RelayState {
   return {
+    currentUserId: null,
     surface: 'Desk',
     page: 'queue',
     view: 'inbox',
@@ -155,6 +161,10 @@ export interface RelayStore {
   state: RelayState
   slaWarnMinutes: number
   setState: (u: Updater) => void
+  currentUser: () => Persona | null
+  caps: () => Caps
+  signIn: (personaId: string) => void
+  signOut: () => void
   agent: (id: string | null) => (typeof agents)[number] | null
   visible: (t: Ticket) => boolean
   viewTickets: (view: string) => Ticket[]
@@ -201,6 +211,35 @@ export function RelayProvider({ children }: { children: React.ReactNode }) {
     setStateRaw((s) => ({ ...s, ...(typeof u === 'function' ? (u as any)(s) : u) }))
   }, [])
 
+  const currentUser = useCallback(() => personaById(stateRef.current.currentUserId), [])
+  const caps = useCallback(() => {
+    const u = personaById(stateRef.current.currentUserId)
+    return capsFor(u ? u.role : 'employee')
+  }, [])
+  const signIn = useCallback(
+    (personaId: string) => {
+      const u = personaById(personaId)
+      if (!u) return
+      const employee = u.role === 'employee'
+      setState({
+        currentUserId: personaId,
+        surface: employee ? 'Portal' : 'Desk',
+        page: 'queue',
+        view: 'inbox',
+        portalPage: 'list',
+        selected: [],
+        navOpen: false,
+        palette: false,
+        composer: false,
+        assignFor: null,
+        merge: false,
+        setSection: capsFor(u.role).settingsSections[0] || 'Organization',
+      })
+    },
+    [setState],
+  )
+  const signOut = useCallback(() => setState({ currentUserId: null, navOpen: false, palette: false }), [setState])
+
   const agent = useCallback((id: string | null) => agents.find((a) => a.id === id) || null, [])
   const visible = useCallback((t: Ticket) => t.status !== 'Resolved', [])
 
@@ -208,7 +247,8 @@ export function RelayProvider({ children }: { children: React.ReactNode }) {
     (view: string) => {
       const ts = stateRef.current.tickets
       const now = stateRef.current.now
-      if (view === 'mine') return ts.filter((t) => t.assignee === 'you' && visible(t))
+      const meId = personaById(stateRef.current.currentUserId)?.agentId || 'you'
+      if (view === 'mine') return ts.filter((t) => t.assignee === meId && visible(t))
       if (view === 'unassigned') return ts.filter((t) => !t.assignee && visible(t))
       if (view === 'breaching') return ts.filter((t) => visible(t) && t.due - now < 60 * 60000)
       if (view === 'waiting') return ts.filter((t) => t.status === 'Waiting on user')
@@ -318,7 +358,8 @@ export function RelayProvider({ children }: { children: React.ReactNode }) {
     const internal = s.replyMode !== 'Public reply'
     const body = s.replyText.trim()
     if (!t || !body) return
-    const msg: ThreadMessage = { author: 'Marcus Cathey', role: 'Desktop Support · Lead', time: 'now', internal, body }
+    const me = personaById(s.currentUserId)
+    const msg: ThreadMessage = { author: me?.name || 'Marcus Cathey', role: me?.title || 'Desktop Support · Lead', time: 'now', internal, body }
     setState((st) => ({
       replyText: '',
       tickets: st.tickets.map((x) =>
@@ -341,12 +382,13 @@ export function RelayProvider({ children }: { children: React.ReactNode }) {
     const win = ({ P1: 240, P2: 480, P3: 1440, P4: 2880 } as Record<string, number>)[nf.priority]
     const id = 'RLY-' + (2842 + Math.floor(Math.random() * 6))
     const a = agent(nf.assignee)
+    const me = personaById(s.currentUserId)
     const t: Ticket = {
       id,
       priority: nf.priority,
       subj: nf.subject.trim(),
       requester: nf.requester.trim(),
-      dept: 'Logged by Marcus',
+      dept: 'Logged by ' + (me?.name.split(' ')[0] || 'the desk'),
       channel: nf.channel,
       category: nf.category,
       team: a ? a.team : 'Desktop Support',
@@ -360,7 +402,7 @@ export function RelayProvider({ children }: { children: React.ReactNode }) {
       viewers: [],
       thread: [
         {
-          author: 'Marcus Cathey',
+          author: me?.name || 'Marcus Cathey',
           role: 'Logged on behalf of ' + nf.requester.trim(),
           time: 'now',
           internal: true,
@@ -388,12 +430,14 @@ export function RelayProvider({ children }: { children: React.ReactNode }) {
     const prio = pf.impact === 'Blocking my work' ? 'P2' : pf.impact === 'Whole team' ? 'P1' : 'P3'
     const win = ({ P1: 240, P2: 480, P3: 1440 } as Record<string, number>)[prio]
     const id = 'RLY-' + (2850 + Math.floor(Math.random() * 9))
+    const me = personaById(s.currentUserId)
+    const reqName = me?.name || 'Marcus Cathey'
     const t: Ticket = {
       id,
       priority: prio as Ticket['priority'],
       subj: pf.subject.trim(),
-      requester: 'Marcus Cathey',
-      dept: 'Desktop Support',
+      requester: reqName,
+      dept: me?.title || 'Desktop Support',
       channel: 'Portal',
       category: pf.category || 'Hardware',
       team: 'Desktop Support',
@@ -405,7 +449,7 @@ export function RelayProvider({ children }: { children: React.ReactNode }) {
       msgs: 1,
       links: [],
       viewers: [],
-      thread: [{ author: 'Marcus Cathey', role: 'Requester', time: 'now', body: pf.body.trim() || pf.subject.trim() }],
+      thread: [{ author: reqName, role: 'Requester', time: 'now', body: pf.body.trim() || pf.subject.trim() }],
     }
     setState((st) => ({
       tickets: [t].concat(st.tickets),
@@ -443,17 +487,19 @@ export function RelayProvider({ children }: { children: React.ReactNode }) {
   const paletteList = useCallback((): PaletteItem[] => {
     const s = stateRef.current
     const q = s.paletteQ.trim().toLowerCase()
+    const me = personaById(s.currentUserId)
+    const c = capsFor(me ? me.role : 'employee')
+    const meId = me?.agentId || 'you'
     const cmds: PaletteItem[] = [
       { kind: 'view', label: 'Go to Unassigned', meta: 'Queue view', icon: 'inbox', run: () => setState({ page: 'queue', view: 'unassigned', palette: false }) },
       { kind: 'view', label: 'Go to Breaching soon', meta: 'Queue view', icon: 'clock', run: () => setState({ page: 'queue', view: 'breaching', palette: false }) },
       { kind: 'view', label: 'Go to Assigned to me', meta: 'Queue view', icon: 'user', run: () => setState({ page: 'queue', view: 'mine', palette: false }) },
       { kind: 'cmd', label: 'New ticket', meta: 'Shortcut C', icon: 'plus', run: () => setState({ composer: true, palette: false }) },
-      { kind: 'cmd', label: 'Assign open ticket to me', meta: 'Reassign', icon: 'user', run: () => { patch([stateRef.current.openId], { assignee: 'you', status: 'In progress' }); setState({ palette: false }); toast(stateRef.current.openId + ' assigned to you', 'var(--blue)') } },
+      { kind: 'cmd', label: 'Assign open ticket to me', meta: 'Reassign', icon: 'user', run: () => { patch([stateRef.current.openId], { assignee: meId, status: 'In progress' }); setState({ palette: false }); toast(stateRef.current.openId + ' assigned to you', 'var(--blue)') } },
       { kind: 'cmd', label: 'Resolve open ticket', meta: 'Shortcut E', icon: 'check', run: () => { setState({ palette: false }); resolveOpen() } },
-      { kind: 'cmd', label: 'SLA dashboard', meta: 'Reports', icon: 'chart', run: () => setState({ page: 'dashboard', palette: false }) },
+      ...(c.canDashboard ? [{ kind: 'cmd', label: 'SLA dashboard', meta: 'Reports', icon: 'chart', run: () => setState({ page: 'dashboard', palette: false }) }] : []),
       { kind: 'cmd', label: 'Who is on call this week?', meta: 'On-call rotation', icon: 'phone', run: () => setState({ page: 'oncall', palette: false }) },
-      { kind: 'cmd', label: 'Settings — directory, archive, logging', meta: 'Admin', icon: 'gear', run: () => setState({ page: 'settings', palette: false }) },
-      { kind: 'cmd', label: 'Switch to the help center', meta: 'End-user view', icon: 'portal', run: () => setState({ surface: 'Portal', palette: false }) },
+      ...(c.canSettings ? [{ kind: 'cmd', label: 'Settings — directory, archive, logging', meta: 'Admin', icon: 'gear', run: () => setState({ page: 'settings', palette: false }) }] : []),
     ]
     const tickets: PaletteItem[] = s.tickets.map((t) => ({
       kind: t.priority,
@@ -477,6 +523,9 @@ export function RelayProvider({ children }: { children: React.ReactNode }) {
   /* ── Keyboard shortcuts ───────────────────────────────────────────── */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      const cu = personaById(stateRef.current.currentUserId)
+      // Agent shortcuts only apply to signed-in agents.
+      if (!cu || cu.role === 'employee') return
       const k = (e.key || '').toLowerCase()
       const meta = e.metaKey || e.ctrlKey
       if (meta && k === 'k') {
@@ -529,6 +578,10 @@ export function RelayProvider({ children }: { children: React.ReactNode }) {
     state,
     slaWarnMinutes: SLA_WARN_MINUTES,
     setState,
+    currentUser,
+    caps,
+    signIn,
+    signOut,
     agent,
     visible,
     viewTickets,

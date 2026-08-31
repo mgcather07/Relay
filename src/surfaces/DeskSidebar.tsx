@@ -5,9 +5,11 @@ import { teams, AV, monday, onCallFor, fmtDay } from '../lib/data'
 import { useIsCompact } from '../lib/useMediaQuery'
 
 export default function DeskSidebar() {
-  const { state, setState, viewTickets, visible } = useRelay()
+  const { state, setState, viewTickets, visible, caps, currentUser } = useRelay()
   const compact = useIsCompact()
   const s = state
+  const c = caps()
+  const me = currentUser()
   const close = () => setState({ navOpen: false })
 
   const counts: Record<string, number> = {
@@ -137,22 +139,26 @@ export default function DeskSidebar() {
         </div>
       </div>
 
-      {/* SLA dashboard + Settings */}
-      <div className="relay-soft-hover relay-hover-white" onClick={() => setState({ page: 'dashboard', navOpen: false })} style={navRow}>
-        {icons.chart}
-        <span>SLA dashboard</span>
-      </div>
-      <div className="relay-soft-hover relay-hover-white" onClick={() => setState({ surface: 'Desk', page: 'settings', navOpen: false })} style={navRow}>
-        {icons.gear}
-        <span>Settings</span>
-      </div>
+      {/* SLA dashboard + Settings (role-gated) */}
+      {c.canDashboard && (
+        <div className="relay-soft-hover relay-hover-white" onClick={() => setState({ page: 'dashboard', navOpen: false })} style={navRow}>
+          {icons.chart}
+          <span>SLA dashboard</span>
+        </div>
+      )}
+      {c.canSettings && (
+        <div className="relay-soft-hover relay-hover-white" onClick={() => setState({ page: 'settings', navOpen: false })} style={navRow}>
+          {icons.gear}
+          <span>Settings</span>
+        </div>
+      )}
 
       {/* Footer */}
       <div style={{ borderTop: '1px solid var(--hairline-soft)', paddingTop: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
-        <Avatar name="Marcus Cathey" size={AV.md} ring />
+        <Avatar name={me?.name || 'Marcus Cathey'} size={AV.md} ring />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Marcus Cathey</div>
-          <div style={{ fontSize: 11, color: 'var(--ink-gray)' }}>Desktop Support · Lead</div>
+          <div style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{me?.name || 'Marcus Cathey'}</div>
+          <div style={{ fontSize: 11, color: 'var(--ink-gray)' }}>{me?.title || 'Desktop Support · Lead'}</div>
         </div>
       </div>
     </div>

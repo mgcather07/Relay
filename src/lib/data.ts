@@ -67,6 +67,79 @@ export interface Ticket {
 
 export const AV = { sm: 22, md: 30, lg: 34, xl: 40 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   Roles & personas. In production a user's role comes from their LDAP/AD
+   group (see Settings → Directory). This demo has no real auth, so we
+   simulate it: the sign-in screen picks a persona, and the persona's role
+   decides what they can access.
+   ───────────────────────────────────────────────────────────────────────── */
+
+export type Role = 'developer' | 'admin' | 'manager' | 'staff' | 'helpdesk' | 'employee'
+
+export interface Persona {
+  id: string
+  name: string
+  role: Role
+  title: string
+  agentId?: string // links to agents[] for "assigned to me" + reply identity
+  group: string // the LDAP group this role maps to (shown on the sign-in card)
+}
+
+export const ROLE_LABEL: Record<Role, string> = {
+  developer: 'Developer',
+  admin: 'Admin',
+  manager: 'Manager',
+  staff: 'Staff',
+  helpdesk: 'Help Desk',
+  employee: 'Employee',
+}
+
+export const ROLE_TINT: Record<Role, string> = {
+  developer: 'var(--indigo)',
+  admin: 'var(--red)',
+  manager: 'var(--purple)',
+  staff: 'var(--cyan)',
+  helpdesk: 'var(--blue)',
+  employee: 'var(--green)',
+}
+
+export const personas: Persona[] = [
+  { id: 'sam', name: 'Sam Okonkwo', role: 'developer', title: 'Platform Engineering', group: 'CN=IT-Platform,OU=Groups' },
+  { id: 'adrienne', name: 'Adrienne Kolb', role: 'admin', title: 'IT Operations · Admin', group: 'CN=IT-Admins,OU=Groups' },
+  { id: 'marcus', name: 'Marcus Cathey', role: 'manager', title: 'Desktop Support · Lead', agentId: 'you', group: 'CN=IT-Leads,OU=Groups' },
+  { id: 'priya', name: 'Priya Nair', role: 'helpdesk', title: 'Identity & Access', agentId: 'priya', group: 'CN=IT-Helpdesk,OU=Groups' },
+  { id: 'wes', name: 'Wes Okafor', role: 'staff', title: 'Field Ops', agentId: 'wes', group: 'CN=IT-Field,OU=Groups' },
+  { id: 'danaw', name: 'Dana Whitfield', role: 'employee', title: 'Finance · Bldg A', group: 'CN=All-Staff,OU=Groups' },
+]
+
+export interface Caps {
+  isEmployee: boolean
+  canWorkQueue: boolean
+  canOncall: boolean
+  canDashboard: boolean
+  canSettings: boolean
+  settingsSections: string[]
+}
+
+const ALL_SETTINGS = ['Organization', 'Channels & categories', 'Directory (LDAP)', 'Data & archive', 'Manager logging']
+
+export function capsFor(role: Role): Caps {
+  const agent = role !== 'employee'
+  const superuser = role === 'admin' || role === 'developer'
+  return {
+    isEmployee: role === 'employee',
+    canWorkQueue: agent,
+    canOncall: agent,
+    canDashboard: role === 'manager' || superuser,
+    canSettings: role === 'manager' || superuser,
+    settingsSections: superuser ? ALL_SETTINGS : role === 'manager' ? ['Manager logging'] : [],
+  }
+}
+
+export function personaById(id: string | null): Persona | null {
+  return personas.find((p) => p.id === id) || null
+}
+
 export const agents: Agent[] = [
   { id: 'you', name: 'Marcus Cathey', short: 'Me', team: 'Desktop Support', load: 7, avail: 'Available' },
   { id: 'dana', name: 'Dana Ruiz', short: 'Dana R.', team: 'Network', load: 12, avail: 'Heavy load' },
