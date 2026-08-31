@@ -42,7 +42,7 @@ export interface PortalForm {
 }
 
 export interface RelayState {
-  surface: 'Desk' | 'Portal' | 'Mobile'
+  surface: 'Desk' | 'Portal'
   page: 'queue' | 'detail' | 'dashboard' | 'oncall' | 'settings'
   view: string
   sortBy: string
@@ -453,8 +453,7 @@ export function RelayProvider({ children }: { children: React.ReactNode }) {
       { kind: 'cmd', label: 'SLA dashboard', meta: 'Reports', icon: 'chart', run: () => setState({ page: 'dashboard', palette: false }) },
       { kind: 'cmd', label: 'Who is on call this week?', meta: 'On-call rotation', icon: 'phone', run: () => setState({ page: 'oncall', palette: false }) },
       { kind: 'cmd', label: 'Settings — directory, archive, logging', meta: 'Admin', icon: 'gear', run: () => setState({ page: 'settings', palette: false }) },
-      { kind: 'cmd', label: 'Switch to the end-user portal', meta: 'Surface', icon: 'portal', run: () => setState({ surface: 'Portal', palette: false }) },
-      { kind: 'cmd', label: 'Preview mobile app', meta: 'Surface', icon: 'phone', run: () => setState({ surface: 'Mobile', palette: false }) },
+      { kind: 'cmd', label: 'Switch to the help center', meta: 'End-user view', icon: 'portal', run: () => setState({ surface: 'Portal', palette: false }) },
     ]
     const tickets: PaletteItem[] = s.tickets.map((t) => ({
       kind: t.priority,

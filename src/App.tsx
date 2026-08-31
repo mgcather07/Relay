@@ -7,7 +7,6 @@ import Dashboard from './surfaces/Dashboard'
 import Oncall from './surfaces/Oncall'
 import Settings from './surfaces/Settings'
 import Portal from './surfaces/Portal'
-import Mobile from './surfaces/Mobile'
 import BulkBar from './overlays/BulkBar'
 import AssignPopover from './overlays/AssignPopover'
 import MergeModal from './overlays/MergeModal'
@@ -19,7 +18,6 @@ export default function App() {
   const { state } = useRelay()
   const isDesktop = state.surface === 'Desk'
   const isPortal = state.surface === 'Portal'
-  const isMobile = state.surface === 'Mobile'
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--app-bg)', display: 'flex', flexDirection: 'column' }}>
@@ -39,7 +37,6 @@ export default function App() {
       )}
 
       {isPortal && <Portal />}
-      {isMobile && <Mobile />}
 
       {/* Overlays */}
       <BulkBar />

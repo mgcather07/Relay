@@ -100,12 +100,16 @@ export default function TopBar() {
         </div>
       )}
 
-      {/* Surface switcher — wraps full width on phone */}
+      {/* View switcher — Staff workspace vs end-user Help center.
+          Device (desktop/phone) is auto-detected via responsive layout. */}
       <SegmentedControl
-        segments={['Desk', 'Portal', 'Mobile']}
+        segments={[
+          { value: 'Desk', label: 'Staff' },
+          { value: 'Portal', label: 'Help center' },
+        ]}
         value={state.surface}
         onChange={(v) => setState({ surface: v as any, navOpen: false })}
-        style={{ flex: phone ? '1 1 100%' : '0 0 auto', order: phone ? 5 : 0, whiteSpace: 'nowrap', minWidth: phone ? 0 : 236 }}
+        style={{ flex: phone ? '1 1 100%' : '0 0 auto', order: phone ? 5 : 0, whiteSpace: 'nowrap', minWidth: phone ? 0 : 200 }}
       />
 
       {/* New ticket */}
