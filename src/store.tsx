@@ -75,6 +75,7 @@ export interface RelayState {
   portalPage: 'list' | 'new' | 'detail'
   portalOpenId: string
   pdReply: string
+  navOpen: boolean
   tickets: Ticket[]
 }
 
@@ -143,6 +144,7 @@ function initialState(): RelayState {
     portalPage: 'list',
     portalOpenId: 'RLY-2830',
     pdReply: '',
+    navOpen: false,
     tickets: seed(),
   }
 }

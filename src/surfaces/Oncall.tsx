@@ -12,12 +12,13 @@ import {
   holidayIn,
   initials,
   range,
-  fmtDay,
   AV,
 } from '../lib/data'
+import { useIsPhone } from '../lib/useMediaQuery'
 
 export default function Oncall() {
   const { state, setState, toast } = useRelay()
+  const phone = useIsPhone()
   const s = state
   const mon = monday(new Date(s.now))
 
@@ -111,7 +112,7 @@ export default function Oncall() {
   const GRID_HOL = 'minmax(190px,1fr) 190px 230px minmax(170px,1fr) minmax(170px,1fr) 110px'
 
   return (
-    <div style={{ padding: '22px 24px 100px' }}>
+    <div style={{ padding: phone ? '18px 16px 100px' : '22px 24px 100px' }}>
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, marginBottom: 18, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 280 }}>
           <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-.4px' }}>On-call rotation</div>

@@ -1,6 +1,7 @@
 import { useRelay } from '../store'
 import { Avatar, Button, FilterChip, SegmentedControl } from '../ds'
 import { agents, tracks, catTrack, onCallFor, monday, AV } from '../lib/data'
+import { useIsPhone } from '../lib/useMediaQuery'
 
 const sublabel: React.CSSProperties = {
   fontSize: 11.5,
@@ -13,6 +14,7 @@ const sublabel: React.CSSProperties = {
 
 export default function NewTicketModal() {
   const { state, setState, closeOverlays, createTicket, toast } = useRelay()
+  const phone = useIsPhone()
   const s = state
   if (!s.composer) return null
 
@@ -92,7 +94,7 @@ export default function NewTicketModal() {
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: phone ? '1fr' : '1fr 1fr', gap: 12 }}>
             <div>
               <div style={sublabel}>Requester</div>
               <input
@@ -137,9 +139,9 @@ export default function NewTicketModal() {
           </div>
 
           {/* On-call strip */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', border: '1px solid rgba(255,214,10,.28)', background: 'rgba(255,214,10,.07)', borderRadius: 'var(--radius-lg)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', border: '1px solid rgba(255,214,10,.28)', background: 'rgba(255,214,10,.07)', borderRadius: 'var(--radius-lg)', flexWrap: 'wrap' }}>
             <Avatar name={nfOc.name} size={AV.lg} />
-            <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ flex: '1 1 140px', minWidth: 0 }}>
               <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 'var(--tracking-label)', color: 'var(--yellow)', textTransform: 'uppercase', marginBottom: 3 }}>
                 On call this week · {nfTrack.name}
               </div>

@@ -2,9 +2,11 @@ import { useRelay } from '../store'
 import { Badge, Button, FilterChip, SegmentedControl } from '../ds'
 import { icons } from '../lib/icons'
 import { sla, prioColor, statusTone, dur, kb, type Ticket } from '../lib/data'
+import { useIsPhone } from '../lib/useMediaQuery'
 
 export default function Portal() {
   const { state, setState, agent, submitPortal, toast, slaWarnMinutes } = useRelay()
+  const phone = useIsPhone()
   const s = state
 
   const portalMine = s.tickets.filter((x) => x.requester === 'Marcus Cathey')
@@ -18,14 +20,14 @@ export default function Portal() {
     (s.pf.impact === 'Whole team' ? 'P1 · 4h target' : s.pf.impact === 'Blocking my work' ? 'P2 · 8h target' : 'P3 · 24h target')
 
   return (
-    <div style={{ flex: 1, display: 'flex', justifyContent: 'center', padding: '40px 24px 100px' }}>
+    <div style={{ flex: 1, display: 'flex', justifyContent: 'center', padding: phone ? '24px 16px 100px' : '40px 24px 100px' }}>
       <div style={{ width: '100%', maxWidth: 760 }}>
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, marginBottom: 22 }}>
-          <div style={{ flex: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, marginBottom: 22, flexWrap: 'wrap' }}>
+          <div style={{ flex: '1 1 240px' }}>
             <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 'var(--tracking-label)', color: 'var(--ink-gray)', textTransform: 'uppercase' }}>
               Relay help center
             </div>
-            <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-.5px', marginTop: 6 }}>Hey Marcus — 2 requests open</div>
+            <div style={{ fontSize: phone ? 24 : 28, fontWeight: 800, letterSpacing: '-.5px', marginTop: 6 }}>Hey Marcus — 2 requests open</div>
             <div style={{ fontSize: 13.5, color: 'var(--ink-2)', marginTop: 4 }}>Track what you've asked for, or start something new.</div>
           </div>
           <Button shape="pill" size="sm" onClick={() => setState({ portalPage: 'new' })} icon={icons.plus}>

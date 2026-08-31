@@ -2,6 +2,7 @@ import { useRelay } from '../store'
 import { Avatar, Badge, Button, Card, SegmentedControl } from '../ds'
 import { icons } from '../lib/icons'
 import { sla, prioColor, prioWord, prioTone, statusTone, dur, kb, AV, type Ticket } from '../lib/data'
+import { useIsCompact } from '../lib/useMediaQuery'
 
 const VIEW_TITLES: Record<string, string> = {
   inbox: 'All open tickets',
@@ -35,6 +36,7 @@ const MACROS = [
 
 export default function TicketDetail() {
   const { state, setState, openTicket, agent, genThread, resolveOpen, sendReply, toast, slaWarnMinutes, openDetail } = useRelay()
+  const compact = useIsCompact()
   const s = state
   const t = openTicket() || ({} as Ticket)
   const osla = sla(t.due ? t : ({ due: Date.now(), window: 240, status: 'New' } as any), s.now, slaWarnMinutes)
@@ -74,7 +76,7 @@ export default function TicketDetail() {
         }}
       >
         {/* Header */}
-        <div style={{ padding: '18px 24px 16px', borderBottom: '1px solid var(--hairline-soft)' }}>
+        <div style={{ padding: compact ? '16px 16px 14px' : '18px 24px 16px', borderBottom: '1px solid var(--hairline-soft)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12, color: 'var(--ink-gray)', marginBottom: 9 }}>
             <span onClick={() => setState({ page: 'queue' })} style={{ cursor: 'pointer', color: 'var(--blue)' }}>
               ← {VIEW_TITLES[s.view]}
@@ -104,7 +106,7 @@ export default function TicketDetail() {
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
             <div style={{ width: 4, alignSelf: 'stretch', minHeight: 40, borderRadius: 3, background: prioColor(t.priority) }} />
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 21, fontWeight: 700, letterSpacing: '-.2px', lineHeight: 1.25 }}>{t.subj}</div>
+              <div style={{ fontSize: compact ? 19 : 21, fontWeight: 700, letterSpacing: '-.2px', lineHeight: 1.25 }}>{t.subj}</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 9, flexWrap: 'wrap' }}>
                 <Badge tone={prioTone(t.priority) as any} solid>
                   {t.priority} {prioWord(t.priority)}
@@ -114,20 +116,32 @@ export default function TicketDetail() {
                   {t.category} · opened {t.opened} · {t.msgs} messages
                 </span>
               </div>
+              {compact && (
+                <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                  <Button size="sm" variant="secondary" shape="pill" onClick={() => setState({ merge: true })} icon={icons.link}>
+                    Link
+                  </Button>
+                  <Button size="sm" shape="pill" onClick={resolveOpen} icon={icons.check}>
+                    {t.status === 'Resolved' ? 'Reopen' : 'Resolve'}
+                  </Button>
+                </div>
+              )}
             </div>
-            <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-              <Button size="sm" variant="secondary" shape="pill" onClick={() => setState({ merge: true })} icon={icons.link}>
-                Link
-              </Button>
-              <Button size="sm" shape="pill" onClick={resolveOpen} icon={icons.check}>
-                {t.status === 'Resolved' ? 'Reopen' : 'Resolve'}
-              </Button>
-            </div>
+            {!compact && (
+              <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                <Button size="sm" variant="secondary" shape="pill" onClick={() => setState({ merge: true })} icon={icons.link}>
+                  Link
+                </Button>
+                <Button size="sm" shape="pill" onClick={resolveOpen} icon={icons.check}>
+                  {t.status === 'Resolved' ? 'Reopen' : 'Resolve'}
+                </Button>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Thread + composer */}
-        <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{ padding: compact ? '16px' : '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
           {thread.map((m, i) => (
             <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
               <Avatar name={m.author} size={AV.lg} />
@@ -250,8 +264,8 @@ export default function TicketDetail() {
         style={{
           flex: '1 1 300px',
           minWidth: 'min(100%,300px)',
-          maxWidth: 360,
-          padding: '18px 18px 80px',
+          maxWidth: compact ? '100%' : 360,
+          padding: compact ? '16px 16px 80px' : '18px 18px 80px',
           display: 'flex',
           flexDirection: 'column',
           gap: 14,

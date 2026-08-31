@@ -2,20 +2,26 @@ import { useRelay } from '../store'
 import { Avatar, Button, SegmentedControl } from '../ds'
 import { icons } from '../lib/icons'
 import { agents, AV } from '../lib/data'
+import { useIsCompact, useIsPhone } from '../lib/useMediaQuery'
 
 export default function TopBar() {
   const { state, setState } = useRelay()
+  const compact = useIsCompact()
+  const phone = useIsPhone()
   const onShift = agents.slice(0, 4).map((a) => ({ name: a.name, title: a.name + ' — ' + a.avail }))
+  const showHamburger = compact && state.surface === 'Desk'
 
   return (
     <div
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 16,
-        height: 56,
-        padding: '0 16px',
+        gap: phone ? 8 : 16,
+        rowGap: 8,
+        minHeight: 56,
+        padding: phone ? '8px 12px' : '0 16px',
         flexShrink: 0,
+        flexWrap: compact ? 'wrap' : 'nowrap',
         background: 'rgba(20,23,28,.72)',
         backdropFilter: 'blur(20px) saturate(180%)',
         WebkitBackdropFilter: 'blur(20px) saturate(180%)',
@@ -25,33 +31,27 @@ export default function TopBar() {
         zIndex: 40,
       }}
     >
+      {/* Hamburger (Desk, compact) */}
+      {showHamburger && (
+        <div
+          onClick={() => setState((s) => ({ navOpen: !s.navOpen }))}
+          className="relay-hover-white"
+          style={{ display: 'grid', placeItems: 'center', width: 34, height: 34, borderRadius: 'var(--radius-sm)', cursor: 'pointer', color: 'var(--ink-1)', flexShrink: 0 }}
+          aria-label="Open navigation"
+        >
+          {icons.menu}
+        </div>
+      )}
+
       {/* Logo */}
       <div
-        onClick={() => setState({ surface: 'Desk', page: 'queue', view: 'inbox' })}
-        style={{ display: 'flex', alignItems: 'center', gap: 9, cursor: 'pointer', paddingRight: 8 }}
+        onClick={() => setState({ surface: 'Desk', page: 'queue', view: 'inbox', navOpen: false })}
+        style={{ display: 'flex', alignItems: 'center', gap: 9, cursor: 'pointer', paddingRight: phone ? 0 : 8, flexShrink: 0 }}
       >
-        <div
-          style={{
-            width: 26,
-            height: 26,
-            borderRadius: 8,
-            background: 'var(--sector-navy)',
-            border: '1px solid var(--hairline)',
-            display: 'grid',
-            placeItems: 'center',
-          }}
-        >
-          <div
-            style={{
-              width: 9,
-              height: 9,
-              borderRadius: '50%',
-              background: 'var(--blue)',
-              boxShadow: '0 0 0 4px rgba(10,132,255,.18)',
-            }}
-          />
+        <div style={{ width: 26, height: 26, borderRadius: 8, background: 'var(--sector-navy)', border: '1px solid var(--hairline)', display: 'grid', placeItems: 'center' }}>
+          <div style={{ width: 9, height: 9, borderRadius: '50%', background: 'var(--blue)', boxShadow: '0 0 0 4px rgba(10,132,255,.18)' }} />
         </div>
-        <div style={{ fontSize: 15, fontWeight: 800, letterSpacing: '1.4px' }}>RELAY</div>
+        {!phone && <div style={{ fontSize: 15, fontWeight: 800, letterSpacing: '1.4px' }}>RELAY</div>}
       </div>
 
       {/* Search pill → command palette */}
@@ -59,8 +59,8 @@ export default function TopBar() {
         className="relay-search-hover"
         onClick={() => setState({ palette: true, paletteQ: '', paletteIdx: 0 })}
         style={{
-          flex: '1 1 260px',
-          minWidth: 250,
+          flex: '1 1 160px',
+          minWidth: phone ? 0 : compact ? 140 : 250,
           maxWidth: 520,
           display: 'flex',
           alignItems: 'center',
@@ -76,72 +76,41 @@ export default function TopBar() {
         }}
       >
         {icons.search}
-        <span
-          style={{
-            flex: 1,
-            minWidth: 0,
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            lineHeight: '34px',
-          }}
-        >
-          Search tickets, people, commands…
+        <span style={{ flex: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: '34px' }}>
+          {phone ? 'Search…' : 'Search tickets, people, commands…'}
         </span>
-        <span
-          style={{
-            fontSize: 11,
-            fontWeight: 700,
-            letterSpacing: '.5px',
-            color: 'var(--ink-2)',
-            background: 'rgba(255,255,255,.07)',
-            border: '1px solid var(--hairline-soft)',
-            borderRadius: 6,
-            padding: '2px 6px',
-          }}
-        >
-          ⌘K
-        </span>
+        {!phone && (
+          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.5px', color: 'var(--ink-2)', background: 'rgba(255,255,255,.07)', border: '1px solid var(--hairline-soft)', borderRadius: 6, padding: '2px 6px' }}>
+            ⌘K
+          </span>
+        )}
       </div>
 
-      {/* Online now */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, paddingRight: 4, flexShrink: 0 }}>
-        <span
-          title="Agents signed in and taking work right now"
-          style={{
-            fontSize: 11,
-            fontWeight: 700,
-            letterSpacing: 'var(--tracking-label)',
-            color: 'var(--ink-gray)',
-            textTransform: 'uppercase',
-          }}
-        >
-          Online now
-        </span>
-        <div style={{ display: 'flex' }}>
-          {onShift.map((a) => (
-            <div
-              key={a.name}
-              title={a.title}
-              style={{ marginLeft: -6, borderRadius: '50%', boxShadow: '0 0 0 2px var(--app-bg)' }}
-            >
-              <Avatar name={a.name} size={AV.sm} />
-            </div>
-          ))}
+      {/* Online now (desktop only) */}
+      {!compact && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, paddingRight: 4, flexShrink: 0 }}>
+          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 'var(--tracking-label)', color: 'var(--ink-gray)', textTransform: 'uppercase' }}>Online now</span>
+          <div style={{ display: 'flex' }}>
+            {onShift.map((a) => (
+              <div key={a.name} title={a.title} style={{ marginLeft: -6, borderRadius: '50%', boxShadow: '0 0 0 2px var(--app-bg)' }}>
+                <Avatar name={a.name} size={AV.sm} />
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Surface switcher */}
+      {/* Surface switcher — wraps full width on phone */}
       <SegmentedControl
         segments={['Desk', 'Portal', 'Mobile']}
         value={state.surface}
-        onChange={(v) => setState({ surface: v as any })}
-        style={{ flexShrink: 0, whiteSpace: 'nowrap', minWidth: 236 }}
+        onChange={(v) => setState({ surface: v as any, navOpen: false })}
+        style={{ flex: phone ? '1 1 100%' : '0 0 auto', order: phone ? 5 : 0, whiteSpace: 'nowrap', minWidth: phone ? 0 : 236 }}
       />
 
       {/* New ticket */}
-      <Button size="sm" shape="pill" onClick={() => setState({ composer: true })} icon={icons.plus}>
-        New ticket
+      <Button size="sm" shape="pill" onClick={() => setState({ composer: true })} icon={icons.plus} style={{ flexShrink: 0 }}>
+        {phone ? '' : 'New ticket'}
       </Button>
     </div>
   )

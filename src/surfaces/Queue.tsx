@@ -2,6 +2,7 @@ import { useRelay } from '../store'
 import { Badge, FilterChip, SegmentedControl, Avatar } from '../ds'
 import { icons, channelIcon, checkMark } from '../lib/icons'
 import { sla, prioColor, prioWord, statusTone, AV, type Ticket } from '../lib/data'
+import { useIsCompact } from '../lib/useMediaQuery'
 
 const GRID = '38px 12px minmax(280px,1fr) 168px 132px 150px 132px'
 const VIEW_TITLES: Record<string, string> = {
@@ -14,7 +15,8 @@ const VIEW_TITLES: Record<string, string> = {
 }
 
 export default function Queue() {
-  const { state, setState, filtered, agent, viewTickets } = useRelay()
+  const { state, setState, filtered, viewTickets } = useRelay()
+  const compact = useIsCompact()
   const s = state
   const rows = filtered()
 
@@ -24,40 +26,44 @@ export default function Queue() {
   const chipDefs = ['P1', 'P2', 'Applications', 'Identity', 'Hardware', 'Infrastructure', 'Email']
 
   const allSelected = s.selected.length > 0 && s.selected.length === rows.length
+  const gutter = compact ? 16 : 24
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
       {/* Title row */}
-      <div style={{ padding: '20px 24px 14px', display: 'flex', alignItems: 'flex-end', gap: 16 }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-.4px' }}>{VIEW_TITLES[s.view]}</div>
+      <div style={{ padding: `${compact ? 16 : 20}px ${gutter}px 14px`, display: 'flex', alignItems: 'flex-end', gap: 16, flexWrap: 'wrap' }}>
+        <div style={{ flex: '1 1 auto', minWidth: 0 }}>
+          <div style={{ fontSize: compact ? 22 : 26, fontWeight: 800, letterSpacing: '-.4px' }}>{VIEW_TITLES[s.view]}</div>
           <div style={{ fontSize: 13, color: 'var(--ink-2)', marginTop: 3 }}>
             {rows.length} tickets · {breached} past SLA · {unassignedCount} waiting to be picked up
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              letterSpacing: 'var(--tracking-label)',
-              color: 'var(--ink-gray)',
-              textTransform: 'uppercase',
-            }}
-          >
-            Sort
-          </span>
+          {!compact && (
+            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 'var(--tracking-label)', color: 'var(--ink-gray)', textTransform: 'uppercase' }}>Sort</span>
+          )}
           <SegmentedControl segments={['SLA', 'Priority', 'Newest']} value={s.sortBy} onChange={(v) => setState({ sortBy: v })} />
         </div>
       </div>
 
-      {/* Filter chips */}
-      <div style={{ padding: '0 24px 14px', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+      {/* Filter chips — horizontal scroll on compact */}
+      <div
+        style={{
+          padding: `0 ${gutter}px 14px`,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          flexWrap: compact ? 'nowrap' : 'wrap',
+          overflowX: compact ? 'auto' : 'visible',
+          WebkitOverflowScrolling: 'touch',
+        }}
+      >
         {chipDefs.map((c) => (
           <FilterChip
             key={c}
             selected={s.filters.indexOf(c) >= 0}
             tint={c === 'P1' ? 'var(--red)' : c === 'P2' ? 'var(--orange)' : 'var(--blue)'}
+            style={compact ? { flexShrink: 0 } : undefined}
             onClick={() =>
               setState((st) => ({
                 filters: st.filters.indexOf(c) >= 0 ? st.filters.filter((x) => x !== c) : st.filters.concat([c]),
@@ -70,12 +76,28 @@ export default function Queue() {
         <div
           className="relay-hover-white"
           onClick={() => setState({ filters: [] })}
-          style={{ fontSize: 12.5, color: 'var(--ink-2)', cursor: 'pointer', padding: '4px 8px', opacity: s.filters.length ? 1 : 0 }}
+          style={{ fontSize: 12.5, color: 'var(--ink-2)', cursor: 'pointer', padding: '4px 8px', opacity: s.filters.length ? 1 : 0, flexShrink: 0 }}
         >
           Clear
         </div>
       </div>
 
+      {/* Card list (compact) */}
+      {compact ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: `0 ${gutter}px` }}>
+          {rows.map((t) => (
+            <Card key={t.id} t={t} />
+          ))}
+          {rows.length === 0 && (
+            <div style={{ padding: '48px 16px', textAlign: 'center', border: '1px solid var(--border-card)', borderRadius: 'var(--radius-xl)', background: 'var(--surface-2)' }}>
+              <div style={{ fontSize: 15, fontWeight: 600 }}>Nothing here</div>
+              <div style={{ fontSize: 13, color: 'var(--ink-2)', marginTop: 4 }}>No tickets match this view and filter set.</div>
+            </div>
+          )}
+          <div style={{ height: 96 }} />
+        </div>
+      ) : (
+        <>
       {/* Table */}
       <div
         style={{
@@ -144,6 +166,57 @@ export default function Queue() {
         )}
       </div>
       <div style={{ height: 96 }} />
+        </>
+      )}
+    </div>
+  )
+}
+
+/* ── Compact card (phone / tablet) ─────────────────────────────────── */
+function Card({ t }: { t: Ticket }) {
+  const { state, agent, openDetail, slaWarnMinutes } = useRelay()
+  const slaR = sla(t, state.now, slaWarnMinutes)
+  const a = agent(t.assignee)
+  return (
+    <div
+      className="relay-card-hover"
+      onClick={() => openDetail(t.id)}
+      style={{
+        background: 'var(--surface-2)',
+        border: '1px solid var(--border-card)',
+        borderRadius: 'var(--radius-lg)',
+        padding: '13px 14px',
+        display: 'flex',
+        gap: 11,
+        alignItems: 'flex-start',
+        cursor: 'pointer',
+      }}
+    >
+      <span style={{ width: 4, alignSelf: 'stretch', minHeight: 40, borderRadius: 2, background: prioColor(t.priority) }} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 5 }}>
+          <span style={{ fontSize: 10.5, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--ink-3)' }}>{t.id}</span>
+          <Badge tone={statusTone(t.status) as any}>{t.status === 'Waiting on user' ? 'Waiting' : t.status}</Badge>
+          <div style={{ flex: 1 }} />
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: slaR.color }}>
+            {icons.clock}
+            {slaR.text}
+          </span>
+        </div>
+        <div style={{ fontSize: 14.5, fontWeight: 600, lineHeight: 1.3, marginBottom: 7, color: t.status === 'Resolved' ? 'var(--ink-2)' : 'var(--ink-1)' }}>{t.subj}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11.5, color: 'var(--ink-gray)' }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+            {channelIcon(t.channel)}
+            {t.category}
+          </span>
+          <span>·</span>
+          <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.requester}</span>
+          <span style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <Avatar name={a ? a.name : ''} size={AV.sm} />
+            <span style={{ color: a ? 'var(--ink-2)' : 'var(--orange)' }}>{a ? (a.id === 'you' ? 'Me' : a.short) : 'Unassigned'}</span>
+          </span>
+        </div>
+      </div>
     </div>
   )
 }

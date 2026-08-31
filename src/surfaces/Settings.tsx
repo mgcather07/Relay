@@ -1,6 +1,7 @@
 import { useRelay } from '../store'
 import { Avatar, Badge, Button } from '../ds'
 import { tracks, catTrack, agents, AV } from '../lib/data'
+import { useIsPhone } from '../lib/useMediaQuery'
 
 const SECTIONS = ['Organization', 'Channels & categories', 'Directory (LDAP)', 'Data & archive', 'Manager logging']
 
@@ -63,6 +64,7 @@ function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
 
 export default function Settings() {
   const { state, setState, toast, testConn, setLdap, setSql } = useRelay()
+  const phone = useIsPhone()
   const s = state
   const sec = s.setSection
 
@@ -128,9 +130,9 @@ export default function Settings() {
   ] as const
 
   return (
-    <div style={{ padding: '22px 24px 100px', display: 'flex', gap: 26, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+    <div style={{ padding: phone ? '18px 16px 100px' : '22px 24px 100px', display: 'flex', gap: phone ? 16 : 26, alignItems: 'flex-start', flexWrap: 'wrap' }}>
       {/* Nav */}
-      <div style={{ flex: '1 1 200px', minWidth: 200, maxWidth: 216, display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <div style={{ flex: phone ? '1 1 100%' : '1 1 200px', minWidth: phone ? 0 : 200, maxWidth: phone ? '100%' : 216, display: 'flex', flexDirection: 'column', gap: 2 }}>
         <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: '-.3px', padding: '0 10px 12px' }}>Settings</div>
         {SECTIONS.map((x) => {
           const active = sec === x

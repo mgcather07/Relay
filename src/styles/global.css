@@ -97,6 +97,14 @@ select option {
     transform: translateX(320%);
   }
 }
+@keyframes relay-drawer-in {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
 
 /* Reusable hover helper for elements that brighten text on hover. */
 .relay-hover-white:hover {

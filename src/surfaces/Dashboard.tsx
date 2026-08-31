@@ -1,6 +1,7 @@
 import { useRelay } from '../store'
 import { Card, Avatar } from '../ds'
 import { sla, prioColor, agents, AV } from '../lib/data'
+import { useIsCompact } from '../lib/useMediaQuery'
 
 const CHART_RAW: [string, number, number][] = [
   ['Mon', 34, 2],
@@ -15,6 +16,7 @@ const MAX_C = 52
 
 export default function Dashboard() {
   const { state, setState, visible, agent, openDetail, slaWarnMinutes } = useRelay()
+  const compact = useIsCompact()
   const s = state
 
   const metricsOpen = s.tickets.filter((x) => visible(x))
@@ -47,7 +49,7 @@ export default function Dashboard() {
   })
 
   return (
-    <div style={{ padding: '22px 24px 100px' }}>
+    <div style={{ padding: compact ? '18px 16px 100px' : '22px 24px 100px' }}>
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, marginBottom: 18 }}>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-.4px' }}>SLA &amp; queue health</div>
@@ -74,7 +76,7 @@ export default function Dashboard() {
       </div>
 
       {/* Chart + at-risk */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: compact ? '1fr' : '1.5fr 1fr', gap: 14 }}>
         <Card caption="Tickets resolved vs breached">
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, height: 180, paddingTop: 14 }}>
             {chart.map((d) => (
@@ -131,12 +133,12 @@ export default function Dashboard() {
           {agentLoad.map((a) => (
             <div key={a.name} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0' }}>
               <Avatar name={a.name} size={AV.md} />
-              <div style={{ width: 150, fontSize: 13, fontWeight: 500 }}>{a.name}</div>
-              <div style={{ width: 132, fontSize: 11.5, color: 'var(--ink-gray)' }}>{a.team}</div>
-              <div style={{ flex: 1, height: 8, borderRadius: 4, background: 'rgba(255,255,255,.07)', overflow: 'hidden' }}>
+              <div style={{ width: compact ? 120 : 150, fontSize: 13, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.name}</div>
+              {!compact && <div style={{ width: 132, fontSize: 11.5, color: 'var(--ink-gray)' }}>{a.team}</div>}
+              <div style={{ flex: 1, minWidth: 40, height: 8, borderRadius: 4, background: 'rgba(255,255,255,.07)', overflow: 'hidden' }}>
                 <div style={{ height: '100%', borderRadius: 4, background: a.tint, width: a.pct + '%' }} />
               </div>
-              <div style={{ width: 96, textAlign: 'right', fontSize: 12.5, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: a.tint }}>
+              <div style={{ width: compact ? 64 : 96, textAlign: 'right', fontSize: 12.5, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: a.tint }}>
                 {a.loadText}
               </div>
             </div>

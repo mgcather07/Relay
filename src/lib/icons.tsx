@@ -50,6 +50,8 @@ export const icons = {
   map: <Ico d="M12 21s7-6.4 7-11a7 7 0 10-14 0c0 4.6 7 11 7 11zm0-8.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5" />,
   bell: <Ico d="M6 16V11a6 6 0 1112 0v5l2 3H4zM10 22h4" />,
   gear: <Ico d="M12 15a3 3 0 100-6 3 3 0 000 6zm8-3l2-1-2-3-2 1-2-1V6h-4v2L10 9 8 8 6 11l2 1v2l-2 1 2 3 2-1 2 1v2h4v-2l2-1 2 1 2-3-2-1z" w={1.5} />,
+  menu: <Ico d="M4 7h16M4 12h16M4 17h16" s={18} w={1.9} />,
+  close: <Ico d="M6 6l12 12M18 6L6 18" s={18} w={1.9} />,
 } as const
 
 export type IconKey = keyof typeof icons
