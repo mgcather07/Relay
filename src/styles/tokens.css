@@ -1,0 +1,109 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   Sector design system tokens — the source of truth for every visual value
+   in Relay. Bundled from design_system/tokens/*.css (colors, radius, spacing,
+   effects, typography, fonts). Dark-first.
+   ───────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* ---- Fonts ---- */
+  --font-system: -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI",
+    Roboto, Helvetica, Arial, sans-serif;
+  --font-rounded: ui-rounded, var(--font-system);
+
+  /* ---- Brand & surfaces ---- */
+  --sector-navy: #001027;
+  --sector-navy-hi: #0a3a5c;
+  --app-bg: #07090d;
+  --surface-1: #14171c;
+  --surface-2: #1c2026;
+  --surface-3: #292c33;
+  --surface-inset: rgba(255, 255, 255, 0.05);
+  --hairline: rgba(255, 255, 255, 0.1);
+  --hairline-soft: rgba(255, 255, 255, 0.08);
+
+  /* ---- Text ---- */
+  --ink-1: #ffffff;
+  --ink-2: rgba(235, 235, 245, 0.6);
+  --ink-3: rgba(235, 235, 245, 0.3);
+  --ink-gray: #8e8e93;
+
+  /* ---- Accent ---- */
+  --blue: #0a84ff;
+  --blue-bright: #3a9bff;
+  --cyan: #64d2ff;
+  --indigo: #5e5ce6;
+  --purple: #bf5af2;
+  --teal: #40c8e0;
+
+  /* ---- Semantic / status ---- */
+  --green: #34c759;
+  --green-bright: #34e27a;
+  --mint: #66d4cf;
+  --yellow: #ffd60a;
+  --orange: #ff9f0a;
+  --red: #ff453a;
+
+  /* ---- Semantic aliases ---- */
+  --bg-app: var(--app-bg);
+  --bg-card: var(--surface-2);
+  --bg-card-elevated: var(--surface-3);
+  --text-primary: var(--ink-1);
+  --text-secondary: var(--ink-2);
+  --text-tertiary: var(--ink-3);
+  --text-caption: var(--ink-gray);
+  --accent: var(--blue);
+  --accent-strong: var(--blue-bright);
+  --border-card: var(--hairline-soft);
+  --border-control: var(--hairline);
+
+  /* ---- Radius ---- */
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-pill: 999px;
+
+  /* ---- Spacing ---- */
+  --space-1: 2px;
+  --space-2: 4px;
+  --space-3: 6px;
+  --space-4: 8px;
+  --space-5: 12px;
+  --space-6: 14px;
+  --space-7: 16px;
+  --space-8: 18px;
+  --space-9: 20px;
+  --space-10: 24px;
+  --space-12: 32px;
+  --space-16: 48px;
+  --screen-gutter: 16px;
+  --card-padding: 16px;
+  --card-gap: 18px;
+  --hit-target: 44px;
+
+  /* ---- Type ---- */
+  --text-caption-2: 11px;
+
+  /* ---- Shadows ---- */
+  --shadow-control: 0 3px 8px rgba(0, 0, 0, 0.3);
+  --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-modal: 0 12px 32px rgba(0, 0, 0, 0.45);
+  --shadow-accent: 0 5px 16px rgba(10, 132, 255, 0.3);
+
+  /* ---- Material ---- */
+  --blur-material: blur(20px) saturate(180%);
+  --material-fill: rgba(28, 32, 38, 0.55);
+
+  /* ---- Motion ---- */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 0.18s;
+  --duration-base: 0.28s;
+  --duration-slow: 0.4s;
+  --press-scale: 0.97;
+  --press-dim: 0.85;
+
+  /* ---- Tracking ---- */
+  --tracking-label: 0.9px;
+}

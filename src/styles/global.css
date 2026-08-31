@@ -1,0 +1,135 @@
+/* Global resets and keyframes, ported from the Relay prototype. */
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--app-bg);
+  color: var(--ink-1);
+  font-family: var(--font-system);
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+a {
+  color: var(--blue);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--blue-bright);
+}
+
+input,
+textarea,
+select,
+button {
+  font-family: var(--font-system);
+}
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+}
+::placeholder {
+  color: var(--ink-3);
+}
+
+select option {
+  background: var(--surface-2);
+  color: var(--ink-1);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+/* ── Signature keyframes ─────────────────────────────────────────────── */
+@keyframes relay-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes relay-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes relay-pop {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes relay-sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(320%);
+  }
+}
+
+/* Reusable hover helper for elements that brighten text on hover. */
+.relay-hover-white:hover {
+  color: #fff !important;
+}
+.relay-row-hover:hover {
+  background: rgba(255, 255, 255, 0.035);
+}
+.relay-nav-hover:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+.relay-soft-hover:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+.relay-assign-hover:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+.relay-bulk-hover:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.relay-macro-hover:hover {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.24) !important;
+}
+.relay-search-hover:hover {
+  border-color: rgba(255, 255, 255, 0.22) !important;
+}
+.relay-card-hover:hover {
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+.relay-oncall-hover:hover {
+  border-color: rgba(255, 214, 10, 0.5) !important;
+}
+.relay-remove-hover:hover {
+  color: var(--red) !important;
+}
