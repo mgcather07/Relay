@@ -1,8 +1,8 @@
 {
-  "projectId": "",
-  "appId": "",
-  "apiKey": "",
-  "authDomain": "",
-  "storageBucket": "",
-  "messagingSenderId": ""
+  "projectId": "relay-helpdesk",
+  "appId": "1:143756045011:web:a336e2a27048cbcd288226",
+  "apiKey": "AIzaSyAzM-ugzA79FE5qN5qU9PCesrUEbJNb1e4",
+  "authDomain": "relay-helpdesk-52e17.firebaseapp.com",
+  "storageBucket": "relay-helpdesk.firebasestorage.app",
+  "messagingSenderId": "143756045011"
 }

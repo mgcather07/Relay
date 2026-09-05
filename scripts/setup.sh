@@ -9,7 +9,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-PROJECT=$(node -e "console.log(require('./.firebaserc').projects.default)")
+PROJECT=$(node -e "console.log(JSON.parse(require('fs').readFileSync('./.firebaserc','utf8')).projects.default)")
 echo "▸ Firebase project: $PROJECT"
 
 echo "▸ Checking for a registered web app…"
@@ -32,7 +32,7 @@ echo "▸ Picking the hosting site…"
 SITE=$(firebase hosting:sites:list --project "$PROJECT" --json \
   | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);const sites=(j.result&&j.result.sites)||[];const ids=sites.map(x=>x.name.split('/').pop());console.log(ids.includes('relay-helpdesk')?'relay-helpdesk':(ids[0]||''))})")
 if [ -n "$SITE" ]; then
-  node -e "const f='./firebase.json';const j=require(f);j.hosting.site='$SITE';require('fs').writeFileSync(f,JSON.stringify(j,null,2)+'\n')"
+  node -e "const fs=require('fs');const f='./firebase.json';const j=JSON.parse(fs.readFileSync(f,'utf8'));j.hosting.site='$SITE';fs.writeFileSync(f,JSON.stringify(j,null,2)+'\n')"
   echo "▸ Hosting site: $SITE"
 fi
 
