@@ -5,9 +5,8 @@ import { icons } from '../lib/icons'
 import { AV } from '../lib/data'
 
 export default function TopBar() {
-  const { state, setState, agents, me, isRequester } = useRelay()
+  const { state, setState, me, isRequester } = useRelay()
   const session = useSession()
-  const onShift = agents.slice(0, 4).map((a) => ({ name: a.name, title: a.name + ' — ' + a.avail }))
 
   return (
     <div
@@ -124,35 +123,6 @@ export default function TopBar() {
               ⌘K
             </span>
           </div>
-
-          {/* Online now */}
-          {onShift.length > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, paddingRight: 4, flexShrink: 0 }}>
-              <span
-                title="Agents in this workspace"
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  letterSpacing: 'var(--tracking-label)',
-                  color: 'var(--ink-gray)',
-                  textTransform: 'uppercase',
-                }}
-              >
-                Team
-              </span>
-              <div style={{ display: 'flex' }}>
-                {onShift.map((a) => (
-                  <div
-                    key={a.name}
-                    title={a.title}
-                    style={{ marginLeft: -6, borderRadius: '50%', boxShadow: '0 0 0 2px var(--app-bg)' }}
-                  >
-                    <Avatar name={a.name} size={AV.sm} />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Surface switcher */}
           <SegmentedControl
