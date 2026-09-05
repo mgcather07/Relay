@@ -70,6 +70,7 @@ export default function Landing() {
         <div style={{ flex: 1 }} />
         <NavLink href="#features">Features</NavLink>
         <NavLink href="#pricing">Pricing</NavLink>
+        <NavLink href="/docs.html">Docs</NavLink>
         <div onClick={() => setAuthMode('signin')} style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--ink-2)', cursor: 'pointer' }}>
           Sign in
         </div>
@@ -219,6 +220,7 @@ export default function Landing() {
           <span style={{ fontSize: 12, color: 'var(--ink-3)' }}>© {new Date().getFullYear()} Relay. Help desk software.</span>
           <div style={{ flex: 1 }} />
           <span onClick={session.enterDemo} style={{ fontSize: 12.5, color: 'var(--ink-2)', cursor: 'pointer' }}>Live demo</span>
+          <a href="/docs.html" style={{ fontSize: 12.5, color: 'var(--ink-2)' }}>Docs</a>
           <a href="#pricing" style={{ fontSize: 12.5, color: 'var(--ink-2)' }}>Pricing</a>
           <a href="mailto:mgcather07@gmail.com?subject=Relay" style={{ fontSize: 12.5, color: 'var(--ink-2)' }}>Contact</a>
         </div>

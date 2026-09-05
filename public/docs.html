@@ -1,0 +1,570 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#07090D" />
+<meta name="description" content="Relay documentation — everything about setting up and running the Relay help desk: workspaces, roles, tickets, SLAs, the portal, on-call, administration, security, and troubleshooting." />
+<title>Relay Docs</title>
+<style>
+  :root{
+    --app-bg:#07090D; --surface-1:#0D1117; --surface-2:#11151C; --surface-3:#1A2029; --surface-inset:#0A0D12;
+    --hairline:rgba(255,255,255,.14); --hairline-soft:rgba(255,255,255,.08); --border-card:rgba(255,255,255,.09);
+    --ink-1:#F2F5F9; --ink-2:#A8B0BC; --ink-3:#6B7482; --ink-gray:#8A93A2;
+    --blue:#0A84FF; --blue-bright:#409CFF; --green:#34C759; --green-bright:#4ADE80; --red:#FF453A;
+    --orange:#FF9F0A; --yellow:#FFD60A; --purple:#BF5AF2; --cyan:#64D2FF; --indigo:#5E5CE6;
+    --sector-navy:#0E1B33; --radius-sm:8px; --radius-md:10px; --radius-lg:14px; --radius-xl:18px; --radius-pill:999px;
+    --font-system:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --font-mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--app-bg);color:var(--ink-1);font-family:var(--font-system);-webkit-font-smoothing:antialiased;line-height:1.65;font-size:14.5px}
+  a{color:var(--blue-bright);text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  .topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:12px;height:56px;padding:0 20px;
+    background:rgba(10,13,18,.82);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);
+    border-bottom:1px solid var(--hairline-soft)}
+  .logo{display:flex;align-items:center;gap:9px;color:var(--ink-1)}
+  .logo:hover{text-decoration:none}
+  .logo-mark{width:24px;height:24px;border-radius:8px;background:var(--sector-navy);border:1px solid var(--hairline);display:grid;place-items:center}
+  .logo-dot{width:8px;height:8px;border-radius:50%;background:var(--blue);box-shadow:0 0 0 4px rgba(10,132,255,.18)}
+  .logo-word{font-size:14px;font-weight:800;letter-spacing:1.4px}
+  .doc-badge{font-size:10.5px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--cyan);
+    background:rgba(100,210,255,.1);border:1px solid rgba(100,210,255,.3);border-radius:var(--radius-pill);padding:2px 9px}
+  .top-links{margin-left:auto;display:flex;gap:18px;font-size:13px}
+  .top-links a{color:var(--ink-2)}
+
+  .shell{display:flex;max-width:1180px;margin:0 auto;align-items:flex-start}
+  nav.sidebar{position:sticky;top:56px;width:250px;flex-shrink:0;max-height:calc(100vh - 56px);overflow-y:auto;
+    padding:26px 8px 40px 20px;border-right:1px solid var(--hairline-soft)}
+  .nav-group{font-size:10.5px;font-weight:800;letter-spacing:.9px;text-transform:uppercase;color:var(--ink-3);margin:20px 10px 6px}
+  .nav-group:first-child{margin-top:0}
+  nav.sidebar a{display:block;padding:5px 10px;border-radius:var(--radius-sm);font-size:13px;color:var(--ink-2);border:1px solid transparent}
+  nav.sidebar a:hover{color:var(--ink-1);text-decoration:none;background:rgba(255,255,255,.04)}
+  nav.sidebar a.active{color:var(--ink-1);background:rgba(10,132,255,.13);border-color:rgba(10,132,255,.28)}
+
+  main{flex:1;min-width:0;padding:34px 24px 120px 40px}
+  main section{scroll-margin-top:76px}
+  h1{font-size:32px;font-weight:800;letter-spacing:-.6px;line-height:1.15;margin:0 0 10px}
+  .lede{font-size:16px;color:var(--ink-2);max-width:640px;margin:0 0 8px}
+  h2{font-size:21px;font-weight:800;letter-spacing:-.3px;margin:46px 0 6px;padding-top:10px;border-top:1px solid var(--hairline-soft)}
+  h3{font-size:15.5px;font-weight:700;margin:26px 0 6px}
+  p{margin:8px 0;color:var(--ink-2);max-width:70ch}
+  p strong,li strong{color:var(--ink-1)}
+  ul,ol{color:var(--ink-2);padding-left:22px;max-width:70ch}
+  li{margin:5px 0}
+  code{font-family:var(--font-mono);font-size:12.5px;background:var(--surface-inset);border:1px solid var(--hairline-soft);border-radius:6px;padding:1.5px 6px;color:var(--ink-1)}
+  pre{background:var(--surface-inset);border:1px solid var(--hairline-soft);border-radius:var(--radius-lg);padding:14px 16px;overflow-x:auto;max-width:760px}
+  pre code{background:none;border:none;padding:0;font-size:12.5px;line-height:1.7}
+
+  table{border-collapse:collapse;width:100%;max-width:760px;margin:12px 0;font-size:13px}
+  .table-wrap{overflow-x:auto;max-width:760px}
+  th{font-size:10.5px;font-weight:800;letter-spacing:.7px;text-transform:uppercase;color:var(--ink-3);text-align:left;padding:8px 12px;border-bottom:1px solid var(--hairline)}
+  td{padding:9px 12px;border-bottom:1px solid var(--hairline-soft);color:var(--ink-2);vertical-align:top}
+  td:first-child{color:var(--ink-1);font-weight:600;white-space:nowrap}
+
+  .callout{display:flex;gap:12px;align-items:flex-start;border-radius:var(--radius-lg);padding:13px 16px;margin:14px 0;max-width:760px;font-size:13.5px}
+  .callout .ico{flex-shrink:0;font-size:15px;line-height:1.5}
+  .callout.tip{background:rgba(52,199,89,.07);border:1px solid rgba(52,199,89,.25);color:var(--ink-2)}
+  .callout.note{background:rgba(10,132,255,.07);border:1px solid rgba(10,132,255,.25);color:var(--ink-2)}
+  .callout.warn{background:rgba(255,159,10,.07);border:1px solid rgba(255,159,10,.28);color:var(--ink-2)}
+
+  .pill{display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;border-radius:var(--radius-pill);padding:2px 9px;vertical-align:1px}
+  .pill.admin{color:var(--purple);background:rgba(191,90,242,.12);border:1px solid rgba(191,90,242,.35)}
+  .pill.agent{color:var(--blue-bright);background:rgba(10,132,255,.12);border:1px solid rgba(10,132,255,.35)}
+  .pill.requester{color:var(--green-bright);background:rgba(52,199,89,.12);border:1px solid rgba(52,199,89,.35)}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:0}
+
+  kbd{font-family:var(--font-mono);font-size:11.5px;font-weight:700;color:var(--ink-1);background:rgba(255,255,255,.07);
+    border:1px solid var(--hairline);border-bottom-width:2px;border-radius:6px;padding:2px 7px}
+
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;max-width:760px;margin:14px 0}
+  .card{background:var(--surface-2);border:1px solid var(--border-card);border-radius:var(--radius-xl);padding:16px}
+  .card h4{margin:0 0 6px;font-size:14px;font-weight:700}
+  .card p{font-size:12.5px;margin:0}
+
+  details{max-width:760px;border:1px solid var(--border-card);border-radius:var(--radius-lg);background:var(--surface-2);margin:8px 0;padding:0 16px}
+  summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:12px 0;color:var(--ink-1);list-style:none;display:flex;align-items:center;gap:8px}
+  summary::before{content:"›";color:var(--ink-3);font-weight:800;transition:transform .15s ease}
+  details[open] summary::before{transform:rotate(90deg)}
+  details p,details ul{margin-top:0;padding-bottom:12px;font-size:13px}
+
+  footer{border-top:1px solid var(--hairline-soft);margin-top:60px;padding:22px 0 0;font-size:12px;color:var(--ink-3);display:flex;gap:16px;flex-wrap:wrap}
+
+  @media (max-width: 900px){
+    nav.sidebar{display:none}
+    main{padding:26px 18px 100px}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a class="logo" href="/">
+    <span class="logo-mark"><span class="logo-dot"></span></span>
+    <span class="logo-word">RELAY</span>
+  </a>
+  <span class="doc-badge">Docs</span>
+  <div class="top-links">
+    <a href="/">Product</a>
+    <a href="/#pricing">Pricing</a>
+    <a href="mailto:mgcather07@gmail.com?subject=Relay%20support">Support</a>
+  </div>
+</div>
+
+<div class="shell">
+<nav class="sidebar" id="sidebar">
+  <div class="nav-group">Start here</div>
+  <a href="#overview">What is Relay?</a>
+  <a href="#quickstart-admin">Set up your company</a>
+  <a href="#quickstart-agent">For agents</a>
+  <a href="#quickstart-requester">For employees</a>
+
+  <div class="nav-group">Concepts</div>
+  <a href="#workspaces">Workspaces &amp; roles</a>
+  <a href="#tickets">Tickets</a>
+  <a href="#sla">Priorities &amp; SLAs</a>
+
+  <div class="nav-group">Using Relay</div>
+  <a href="#desk">The Desk</a>
+  <a href="#portal">The Portal</a>
+  <a href="#dashboard">Dashboard</a>
+  <a href="#oncall">On-call rotations</a>
+  <a href="#shortcuts">Keyboard shortcuts</a>
+
+  <div class="nav-group">Administration</div>
+  <a href="#settings">Settings</a>
+  <a href="#invites">Invites &amp; team</a>
+  <a href="#audit">Logging &amp; audit</a>
+
+  <div class="nav-group">Trust</div>
+  <a href="#security">Security &amp; data</a>
+  <a href="#plans">Plans &amp; billing</a>
+
+  <div class="nav-group">Operators</div>
+  <a href="#deploy">Deployment</a>
+
+  <div class="nav-group">Help</div>
+  <a href="#faq">FAQ</a>
+  <a href="#troubleshooting">Troubleshooting</a>
+</nav>
+
+<main>
+
+<section id="overview">
+  <h1>Relay documentation</h1>
+  <p class="lede">Everything you need to run your service desk on Relay — from first sign-up to
+  day-to-day queue work, administration, and the security model underneath.</p>
+
+  <h2 style="border:none;margin-top:26px">What is Relay?</h2>
+  <p>Relay is help desk software for internal IT teams. It turns phone calls, emails, walk-ups,
+  and self-service requests into <strong>one prioritized queue</strong> with a live SLA countdown on every
+  ticket, a clean portal for the people asking for help, and on-call rotations built from your
+  actual team roster.</p>
+  <p>Relay runs entirely in the browser. There is nothing to install on any machine — every
+  computer on your network (or off it) gets the same live workspace, synced in real time.</p>
+  <div class="cards">
+    <div class="card"><h4>One queue</h4><p>Every channel lands in a single list, sorted by how close each ticket is to breaching its target.</p></div>
+    <div class="card"><h4>Live SLA clocks</h4><p>Targets count down in real time. At-risk work turns orange an hour out; breaches turn red.</p></div>
+    <div class="card"><h4>Roles built in</h4><p>Admins run the workspace, agents work the desk, requesters get a portal that shows only their own requests.</p></div>
+    <div class="card"><h4>Walled-off data</h4><p>Each company's workspace is isolated server-side. No other customer can ever read your tickets.</p></div>
+  </div>
+</section>
+
+<section id="quickstart-admin">
+  <h2>Set up your company <span class="pill admin">Admin</span></h2>
+  <p>Getting a company onto Relay takes about two minutes:</p>
+  <ol>
+    <li><strong>Create your account.</strong> Click <em>Get started</em> on the home page and sign up with
+    your work email and a password (6+ characters).</li>
+    <li><strong>Name your workspace.</strong> On the next screen choose <em>Create a workspace</em> and enter
+    your company name. You become its first <strong>administrator</strong>.</li>
+    <li><strong>Look around.</strong> Relay seeds three clearly-labeled sample tickets so the desk isn't
+    empty. Remove them any time in <em>Settings → Organization → Remove sample data</em>.</li>
+    <li><strong>Invite your team.</strong> Open <em>Settings → Team &amp; invites</em>. You'll find two codes:
+      <ul>
+        <li><code>AGT-XXXXXXXX</code> — for people who will <em>work</em> tickets (agents)</li>
+        <li><code>REQ-XXXXXXXX</code> — for everyone else in the company (requesters)</li>
+      </ul>
+    Share each code with the right group — chat, email, or a sticky note on the IT room door all work.</li>
+    <li><strong>Tune the basics.</strong> In Settings, set your time zone and business hours, and adjust
+    the channels and categories agents pick from when logging tickets.</li>
+  </ol>
+  <div class="callout tip"><span class="ico">💡</span><span><strong>Tip:</strong> promote a second admin early
+  (Settings → Team &amp; invites → change a member's role) so workspace administration never depends
+  on one person.</span></div>
+</section>
+
+<section id="quickstart-agent">
+  <h2>For agents <span class="pill agent">Agent</span></h2>
+  <ol>
+    <li>Sign up on the Relay home page with your work email.</li>
+    <li>Choose <em>I have an invite code</em> and enter the <code>AGT-…</code> code from your administrator.</li>
+    <li>You land on the <strong>Desk</strong> — the live queue. Start with the <em>Unassigned</em> view and pick
+    something up, or check <em>Breaching soon</em> for anything about to miss its target.</li>
+  </ol>
+  <p>Your day-to-day loop: open a ticket → reply to the requester (or leave an internal note for
+  the next tech) → resolve when it's fixed. Everything you do updates for the whole team in real
+  time, and your open-ticket load shows up in assignment suggestions.</p>
+</section>
+
+<section id="quickstart-requester">
+  <h2>For employees <span class="pill requester">Requester</span></h2>
+  <ol>
+    <li>Sign up with your work email, choose <em>I have an invite code</em>, and enter the
+    <code>REQ-…</code> code (ask IT if you don't have it).</li>
+    <li>You land in the <strong>Help Center</strong> — your portal. Click <em>New request</em>, describe the
+    problem in plain words, and say how much it's blocking you. Relay sets the priority and
+    routes it to the right team automatically.</li>
+    <li>Track every request you've made with live status; reply on the request thread whenever
+    the technician needs something from you.</li>
+  </ol>
+  <div class="callout note"><span class="ico">ℹ️</span><span>Requesters only ever see their <em>own</em>
+  requests — never the rest of the company's queue.</span></div>
+</section>
+
+<section id="workspaces">
+  <h2>Workspaces &amp; roles</h2>
+  <p>A <strong>workspace</strong> is one company's private Relay: its people, tickets, settings, and audit
+  trail. Every account belongs to exactly one workspace, joined either by founding it or by
+  invite code.</p>
+  <div class="table-wrap"><table>
+    <tr><th>Role</th><th>Sees</th><th>Can do</th></tr>
+    <tr><td><span class="pill admin">Admin</span></td><td>Desk + Portal + Settings</td>
+      <td>Everything an agent can, plus: edit organization settings, manage members and roles, view and regenerate invite codes, manage channels/categories, configure logging, delete tickets and sample data.</td></tr>
+    <tr><td><span class="pill agent">Agent</span></td><td>Desk + Portal</td>
+      <td>Work the full queue: create, assign, reply, add internal notes, resolve/reopen, bulk actions, dashboard, and on-call pages.</td></tr>
+    <tr><td><span class="pill requester">Requester</span></td><td>Portal only</td>
+      <td>Submit requests, track their own tickets, and reply on their own threads. Nothing else is visible or reachable.</td></tr>
+  </table></div>
+  <p>Roles are enforced <strong>on the server</strong>, not just hidden in the interface — see
+  <a href="#security">Security &amp; data</a>.</p>
+</section>
+
+<section id="tickets">
+  <h2>Tickets</h2>
+  <p>A ticket is one request for help, with a conversation thread and an SLA clock. Tickets get
+  sequential IDs per workspace (<code>RLY-1000</code>, <code>RLY-1001</code>, …) allocated atomically, so two
+  agents logging at once can never collide.</p>
+  <h3>How tickets are born</h3>
+  <ul>
+    <li><strong>Portal:</strong> an employee submits a request. Relay maps their impact answer to a priority
+    (see below) and routes it to the desk unassigned.</li>
+    <li><strong>Desk:</strong> an agent presses <kbd>C</kbd> (or <em>New ticket</em>) to log a call or walk-up on
+    behalf of someone, choosing channel, category, priority, and an assignee — or leaving it in
+    the pool.</li>
+  </ul>
+  <h3>Statuses</h3>
+  <div class="table-wrap"><table>
+    <tr><th>Status</th><th>Meaning</th></tr>
+    <tr><td>New</td><td>Nobody has picked it up yet.</td></tr>
+    <tr><td>Triage</td><td>Being classified/routed before real work starts.</td></tr>
+    <tr><td>In progress</td><td>Assigned and actively worked. Assigning a ticket sets this automatically, as does a first public reply.</td></tr>
+    <tr><td>Waiting on user</td><td>The desk needs something from the requester.</td></tr>
+    <tr><td>Resolved</td><td>Done. Resolved tickets leave the open views but stay searchable; reopening puts them back in progress.</td></tr>
+  </table></div>
+  <h3>Replies vs. internal notes</h3>
+  <p>The composer on every ticket has two modes. <strong>Public reply</strong> goes to the requester and
+  appears on their portal thread. <strong>Internal note</strong> (highlighted yellow) is visible only to the
+  desk — perfect for handoffs between shifts. The requester never sees internal notes.</p>
+  <h3>Linking and merging</h3>
+  <p>Use <em>Link</em> on a ticket (or <em>Merge</em> from the bulk bar) to connect duplicates and related
+  incidents — for example five reports of the same outage.</p>
+</section>
+
+<section id="sla">
+  <h2>Priorities &amp; SLAs</h2>
+  <p>Every priority carries a resolution target. The clock starts when the ticket is created and
+  counts down live on the queue, the detail view, and the dashboard.</p>
+  <div class="table-wrap"><table>
+    <tr><th>Priority</th><th>Means</th><th>Resolution target</th><th>First-reply guide</th></tr>
+    <tr><td><span class="dot" style="background:var(--red)"></span>P1 · Critical</td><td>Whole team or business function down</td><td>4 hours</td><td>15 minutes</td></tr>
+    <tr><td><span class="dot" style="background:var(--orange)"></span>P2 · High</td><td>Someone is blocked from working</td><td>8 hours</td><td>30 minutes</td></tr>
+    <tr><td><span class="dot" style="background:var(--blue)"></span>P3 · Normal</td><td>Annoying but there's a workaround</td><td>24 hours</td><td>4 hours</td></tr>
+    <tr><td><span class="dot" style="background:var(--ink-gray)"></span>P4 · Low</td><td>Requests, nice-to-haves</td><td>48 hours</td><td>1 day</td></tr>
+  </table></div>
+  <p>Portal requests map impact to priority automatically: <em>“Whole team”</em> → P1,
+  <em>“Blocking my work”</em> → P2, <em>“Annoying”</em> → P3.</p>
+  <p><strong>Color language everywhere:</strong> <span style="color:var(--green)">green</span> = on track,
+  <span style="color:var(--orange)">orange</span> = at risk (less than an hour left),
+  <span style="color:var(--red)">red</span> = breach imminent or missed. The <em>Breaching soon</em> view
+  collects everything inside the final hour.</p>
+</section>
+
+<section id="desk">
+  <h2>The Desk</h2>
+  <p>The Desk is where agents live: a sidebar of views, the queue, and the ticket detail.</p>
+  <h3>Views</h3>
+  <div class="table-wrap"><table>
+    <tr><th>View</th><th>Shows</th></tr>
+    <tr><td>All open</td><td>Every unresolved ticket.</td></tr>
+    <tr><td>Assigned to me</td><td>Your open work.</td></tr>
+    <tr><td>Unassigned</td><td>The pickup pool — nothing has an owner yet.</td></tr>
+    <tr><td>Breaching soon</td><td>Anything within an hour of missing its target (or already past it).</td></tr>
+    <tr><td>Waiting on user</td><td>Blocked on the requester.</td></tr>
+    <tr><td>Resolved</td><td>Recently closed work.</td></tr>
+  </table></div>
+  <p>Filter any view by priority, category, channel, or team using the chips above the queue and
+  the team list in the sidebar. Sort by SLA urgency, priority, or newest.</p>
+  <h3>Working the queue</h3>
+  <ul>
+    <li><strong>Assign</strong> from the assignee pill on any row (or inside a ticket). The picker sorts
+    teammates by current open load and suggests the lightest.</li>
+    <li><strong>Bulk actions:</strong> select rows with the checkboxes and a floating bar appears — assign,
+    raise to P1, resolve, or merge in one motion.</li>
+    <li><strong>Macros:</strong> one-click reply starters (“Ask for a screenshot”, “Escalating now”,
+    “Fixed — confirm?”) sit under the composer.</li>
+    <li><strong>Knowledge suggestions:</strong> when the workspace has knowledge-base articles, likely
+    matches appear beside the ticket with one-click <em>insert into reply</em>.</li>
+  </ul>
+  <h3>Command palette</h3>
+  <p>Press <kbd>⌘K</kbd> (or <kbd>/</kbd>) anywhere on the desk to search tickets and jump to any view
+  or action — “assign to me”, “resolve”, “who is on call”, straight from the keyboard.</p>
+</section>
+
+<section id="portal">
+  <h2>The Portal</h2>
+  <p>The portal (your company <strong>Help Center</strong>) is what requesters see — and agents can preview
+  it any time with the surface switcher in the top bar.</p>
+  <ul>
+    <li><strong>New request:</strong> a short form — summary, category, how blocking it is, details. The
+    routing hint under the button shows exactly where it will go and what target it gets.</li>
+    <li><strong>My requests:</strong> every request the person has made, with live status and time-to-target.</li>
+    <li><strong>Request thread:</strong> a timeline of what's happened — received, picked up, public replies —
+    plus a reply box that goes straight to the technician. Internal desk notes never appear here.</li>
+  </ul>
+</section>
+
+<section id="dashboard">
+  <h2>Dashboard</h2>
+  <p><em>SLA &amp; queue health</em> (sidebar → SLA dashboard) is computed live from your real tickets:</p>
+  <ul>
+    <li><strong>Open tickets / Past SLA / Resolved / Unassigned</strong> counters.</li>
+    <li><strong>Resolved vs. breached</strong> — the last seven days of closes, flagged red when a ticket
+    closed after its target.</li>
+    <li><strong>At risk in the next hour</strong> — click through to any ticket about to breach.</li>
+    <li><strong>Agent load</strong> — open tickets per person, so rebalancing is a glance, not a meeting.</li>
+  </ul>
+</section>
+
+<section id="oncall">
+  <h2>On-call rotations</h2>
+  <p>Relay builds weekly on-call rotations from your team roster — one track per team, rotating
+  through its members week by week (weeks roll on Monday).</p>
+  <ul>
+    <li><strong>This week:</strong> cards per track showing the primary, the escalation ladder, and contact
+    details, with one-click <em>New ticket</em> pre-assigned to whoever is on call.</li>
+    <li><strong>Next 8 weeks:</strong> the schedule ahead, so people can plan swaps around holidays.</li>
+    <li><strong>Holidays:</strong> the observed-holiday calendar with who covers each one.</li>
+    <li><strong>Escalation:</strong> if a page isn't acknowledged, escalate up the ladder; the duty manager
+    (your first admin, unless configured otherwise) is always the final rung.</li>
+  </ul>
+  <div class="callout note"><span class="ico">ℹ️</span><span>Rotations are generated from team
+  membership in Settings — add or move people between teams and the tracks update
+  automatically.</span></div>
+</section>
+
+<section id="shortcuts">
+  <h2>Keyboard shortcuts</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Keys</th><th>Action</th></tr>
+    <tr><td><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></td><td>Open the command palette</td></tr>
+    <tr><td><kbd>/</kbd></td><td>Open the command palette (search)</td></tr>
+    <tr><td><kbd>C</kbd></td><td>New ticket</td></tr>
+    <tr><td><kbd>⌘↩</kbd></td><td>Create the ticket from the New-ticket form</td></tr>
+    <tr><td><kbd>E</kbd></td><td>Resolve / reopen the open ticket</td></tr>
+    <tr><td><kbd>↑</kbd> <kbd>↓</kbd> <kbd>↩</kbd></td><td>Navigate and run palette results</td></tr>
+    <tr><td><kbd>Esc</kbd></td><td>Close any modal, palette, or selection</td></tr>
+  </table></div>
+</section>
+
+<section id="settings">
+  <h2>Settings <span class="pill admin">Admin</span></h2>
+  <p>Settings (sidebar → Settings; admins only) is organized into sections:</p>
+  <div class="table-wrap"><table>
+    <tr><th>Section</th><th>What lives there</th></tr>
+    <tr><td>Organization</td><td>Company name, mail domain, business hours, time zone; connected-systems overview; remove sample data.</td></tr>
+    <tr><td>Team &amp; invites</td><td>Everyone in the workspace with their role; the two invite codes with copy/regenerate. See <a href="#invites">Invites &amp; team</a>.</td></tr>
+    <tr><td>Channels &amp; categories</td><td>The channel buttons agents pick when logging a call, and the categories that drive routing. Retiring a category keeps it on old tickets but hides it from new ones.</td></tr>
+    <tr><td>Directory (LDAP)</td><td>Enterprise add-on: sync directory groups to Relay roles automatically.</td></tr>
+    <tr><td>Data &amp; archive</td><td>Enterprise add-on: nightly export of closed tickets to a SQL database you own.</td></tr>
+    <tr><td>Manager logging</td><td>Audit toggles, retention, agent scorecards, and the audit trail with CSV export. See <a href="#audit">Logging &amp; audit</a>.</td></tr>
+  </table></div>
+  <p>Settings changes save automatically a moment after you stop typing and sync to everyone
+  instantly.</p>
+</section>
+
+<section id="invites">
+  <h2>Invites &amp; team <span class="pill admin">Admin</span></h2>
+  <h3>Invite codes</h3>
+  <p>Each workspace has exactly two live codes — one per joining role:</p>
+  <ul>
+    <li><code>AGT-XXXXXXXX</code> joins new members as <strong>agents</strong>.</li>
+    <li><code>REQ-XXXXXXXX</code> joins new members as <strong>requesters</strong>.</li>
+  </ul>
+  <p>Codes are unguessable random tokens. <strong>Regenerate</strong> issues a fresh code and kills the old
+  one immediately — do this if a code leaks outside the company. Existing members are never
+  affected by regeneration.</p>
+  <h3>Managing people</h3>
+  <ul>
+    <li><strong>Change a role</strong> with the dropdown next to any member (e.g. promote an agent to admin,
+    or move a requester to the desk). It takes effect on their next page load.</li>
+    <li><strong>You can't change your own role</strong> — another admin must, which prevents a workspace from
+    accidentally losing its last administrator.</li>
+  </ul>
+</section>
+
+<section id="audit">
+  <h2>Logging &amp; audit <span class="pill admin">Admin</span></h2>
+  <ul>
+    <li><strong>Audit trail:</strong> when action logging is on, every create, assign, reply, resolve, role
+    change, and invite regeneration is recorded — who, what, when. The trail is
+    <strong>append-only</strong>: nothing in it can be edited or deleted, not even by admins.</li>
+    <li><strong>Export:</strong> one click exports the trail to CSV.</li>
+    <li><strong>Scorecards:</strong> per-agent closed volume and SLA-met percentage, computed from the actual
+    tickets in your workspace.</li>
+    <li><strong>Verbatim logging</strong> (storing full reply text in the audit log) is <em>off</em> by default —
+    check with HR before enabling.</li>
+  </ul>
+</section>
+
+<section id="security">
+  <h2>Security &amp; data</h2>
+  <p>Relay is multi-tenant with <strong>server-side isolation</strong>. The rules below are enforced by the
+  database itself (Cloud Firestore security rules), not by the app's interface:</p>
+  <ul>
+    <li>Only members of a workspace can read anything in it. There is no cross-workspace query,
+    listing, or lookup — one company can never see another's existence, let alone its tickets.</li>
+    <li>Requesters can only read tickets where they are the requester, and can only append to
+    their own threads.</li>
+    <li>Settings and membership writes require the admin role; the audit trail accepts appends
+    only.</li>
+    <li>Invite codes work like capability tokens: knowing a live code is the only way in, codes
+    can't be listed or enumerated, and regeneration revokes instantly.</li>
+  </ul>
+  <h3>What Relay stores</h3>
+  <ul>
+    <li><strong>Account:</strong> name, work email, and a salted password hash (handled by Firebase
+    Authentication — Relay never sees or stores plaintext passwords).</li>
+    <li><strong>Workspace data:</strong> tickets and their threads, workspace settings, membership and
+    roles, and the audit trail.</li>
+  </ul>
+  <p>Data lives in Google Cloud (Firestore) with encryption at rest and TLS in transit.
+  Password resets go through the standard email reset flow — Relay staff cannot read or set
+  anyone's password.</p>
+</section>
+
+<section id="plans">
+  <h2>Plans &amp; billing</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Plan</th><th>Price</th><th>Includes</th></tr>
+    <tr><td>Starter</td><td>Free (early access)</td><td>Up to 3 agents, unlimited requesters, full ticketing + portal, SLA tracking.</td></tr>
+    <tr><td>Team</td><td>$12 / agent / month</td><td>Unlimited agents, audit trail &amp; scorecards, on-call rotations, priority support.</td></tr>
+    <tr><td>Enterprise</td><td>Custom</td><td>Everything in Team plus directory sync (LDAP/AD), SQL archive connector, dedicated onboarding, custom retention and SLAs.</td></tr>
+  </table></div>
+  <p>Requesters are always free on every plan. During early access all workspaces run on
+  Starter; to talk plans or Enterprise connectors,
+  <a href="mailto:mgcather07@gmail.com?subject=Relay%20plans">contact sales</a>.</p>
+</section>
+
+<section id="deploy">
+  <h2>Deployment <span class="pill admin">Operators</span></h2>
+  <p>This section is for whoever operates a Relay deployment (if you're using the hosted
+  service, you can skip it).</p>
+  <p>Relay ships as a static web app on Firebase Hosting backed by Firebase Authentication and
+  Cloud Firestore. A fresh deployment activates in three steps:</p>
+  <ol>
+    <li>In the Firebase console for the project: <strong>Firestore → Create database</strong> (production
+    mode) and <strong>Authentication → enable Email/Password</strong>.</li>
+    <li>From the repository: <code>bash scripts/setup.sh</code> — registers the web app, writes
+    <code>src/firebase-config.json</code>, builds, and deploys hosting plus the Firestore security
+    rules.</li>
+    <li>Visit the hosting URL and create the first workspace.</li>
+  </ol>
+  <p>Local development:</p>
+  <pre><code>npm install
+npm run dev              # http://localhost:5173
+npx tsc --noEmit         # typecheck
+firebase emulators:start --only auth,firestore   # needs Java 21+
+# then open http://localhost:5173/?emu=1 to run live mode against emulators</code></pre>
+  <p>Until a deployment is activated, the site still serves the marketing page and the
+  interactive demo; sign-up explains that accounts aren't enabled yet.</p>
+</section>
+
+<section id="faq">
+  <h2>FAQ</h2>
+  <details><summary>Does anything need to be installed on employees' computers?</summary>
+    <p>No. Relay is a website. Any modern browser on any operating system works — office
+    desktops, laptops at home, phones.</p></details>
+  <details><summary>Can I be in two workspaces at once?</summary>
+    <p>Not today — an account belongs to one workspace. Use a second email address if you truly
+    need two (for example, a consultant serving two companies).</p></details>
+  <details><summary>What happens if an invite code leaks?</summary>
+    <p>Regenerate it (Settings → Team &amp; invites). The old code stops working immediately.
+    People who already joined are unaffected — remove any unwanted member from the same
+    screen.</p></details>
+  <details><summary>Can requesters see other people's tickets?</summary>
+    <p>No. The server only lets a requester read tickets they filed themselves. Even a modified
+    client can't fetch anyone else's data.</p></details>
+  <details><summary>Can we change the SLA targets?</summary>
+    <p>The four priority targets (4h/8h/24h/48h) are fixed in the current release. A per-plan
+    SLA policy editor is on the roadmap; Enterprise agreements can include custom targets.</p></details>
+  <details><summary>Do you send email notifications?</summary>
+    <p>Not yet — updates are live in the app in real time. Email notifications on ticket events
+    are on the roadmap.</p></details>
+  <details><summary>Is there an API?</summary>
+    <p>Not yet. If an integration matters to you, tell us which one —
+    <a href="mailto:mgcather07@gmail.com?subject=Relay%20API">sales@relay</a> routes to the team.</p></details>
+  <details><summary>How do I delete a ticket?</summary>
+    <p>Admins can delete tickets (agents resolve instead, which preserves history). The three
+    sample tickets can be removed in one click from Settings → Organization.</p></details>
+  <details><summary>What browsers are supported?</summary>
+    <p>Current versions of Chrome, Edge, Safari, and Firefox.</p></details>
+</section>
+
+<section id="troubleshooting">
+  <h2>Troubleshooting</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Symptom</th><th>Likely cause &amp; fix</th></tr>
+    <tr><td>“That invite code isn't valid”</td><td>The code was mistyped or has been regenerated. Codes are exactly <code>AGT-</code>/<code>REQ-</code> plus 8 characters, no spaces — ask your admin for the current one.</td></tr>
+    <tr><td>“Email and password don't match”</td><td>Use <em>Forgot password?</em> on the sign-in card to get a reset link, or make sure you're using the email you signed up with.</td></tr>
+    <tr><td>“This deployment isn't activated yet”</td><td>The operator hasn't finished <a href="#deploy">activation</a>. The demo still works; accounts will open once Firestore and email sign-in are enabled.</td></tr>
+    <tr><td>I only see the portal, not the queue</td><td>Your account joined with a requester code. An admin can change your role to agent in Settings → Team &amp; invites.</td></tr>
+    <tr><td>Settings is missing from my sidebar</td><td>Settings is admin-only. Ask an existing admin to promote you.</td></tr>
+    <tr><td>Changes aren't appearing for a teammate</td><td>Relay syncs in real time; if it stops, check the network connection and reload the page. Offline edits reconcile automatically when the connection returns.</td></tr>
+    <tr><td>A ticket shows a negative time like −2h</td><td>That's a breach — the ticket is past its resolution target by that amount. It also appears in <em>Breaching soon</em>.</td></tr>
+  </table></div>
+  <p>Still stuck? Email <a href="mailto:mgcather07@gmail.com?subject=Relay%20support">support</a> with
+  your workspace name and a screenshot.</p>
+</section>
+
+<footer>
+  <span>© <span id="yr"></span> Relay — help desk software.</span>
+  <a href="/">relay home</a>
+  <a href="/#pricing">pricing</a>
+  <a href="mailto:mgcather07@gmail.com?subject=Relay">contact</a>
+</footer>
+
+</main>
+</div>
+
+<script>
+  document.getElementById('yr').textContent = new Date().getFullYear();
+  // Scroll-spy: highlight the sidebar link for the section in view.
+  const links = [...document.querySelectorAll('nav.sidebar a')];
+  const byId = Object.fromEntries(links.map(a => [a.getAttribute('href').slice(1), a]));
+  const obs = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      if (e.isIntersecting) {
+        links.forEach(a => a.classList.remove('active'));
+        const a = byId[e.target.id];
+        if (a) { a.classList.add('active'); }
+      }
+    }
+  }, { rootMargin: '-20% 0px -70% 0px' });
+  document.querySelectorAll('main section[id]').forEach(s => obs.observe(s));
+</script>
+</body>
+</html>
