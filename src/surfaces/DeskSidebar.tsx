@@ -1,10 +1,12 @@
 import { useRelay } from '../store'
+import { useSession } from '../session'
 import { Avatar } from '../ds'
 import { icons } from '../lib/icons'
-import { teams, AV, monday, onCallFor, fmtDay } from '../lib/data'
+import { AV, monday, fmtDay } from '../lib/data'
 
 export default function DeskSidebar() {
-  const { state, setState, viewTickets, visible } = useRelay()
+  const { state, setState, viewTickets, visible, teams, tracks, onCall, contactFor, me, canAdmin, mode } = useRelay()
+  const session = useSession()
   const s = state
 
   const counts: Record<string, number> = {
@@ -26,7 +28,9 @@ export default function DeskSidebar() {
   ]
 
   const mon = monday(new Date(s.now))
-  const ocSidebar = onCallFor('hd', mon)!
+  const ocTrack = tracks[mode === 'demo' ? 3 : 0]
+  const ocSidebar = ocTrack ? onCall(ocTrack.id, mon) : null
+  const ocContact = ocSidebar ? contactFor(ocSidebar.name) : null
   const ocWeekLabel = 'Week of ' + fmtDay(mon)
 
   return (
@@ -140,38 +144,40 @@ export default function DeskSidebar() {
       <div style={{ flex: 1 }} />
 
       {/* On-call card */}
-      <div
-        className="relay-oncall-hover"
-        onClick={() => setState({ surface: 'Desk', page: 'oncall' })}
-        style={{
-          border: '1px solid rgba(255,214,10,.28)',
-          background: 'rgba(255,214,10,.07)',
-          borderRadius: 'var(--radius-lg)',
-          padding: '11px 12px',
-          cursor: 'pointer',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 7 }}>
-          <span
-            style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--yellow)', animation: 'relay-pulse 2.4s infinite' }}
-          />
-          <span
-            style={{
-              fontSize: 10,
-              fontWeight: 700,
-              letterSpacing: 'var(--tracking-label)',
-              color: 'var(--yellow)',
-              textTransform: 'uppercase',
-            }}
-          >
-            On call · helpdesk
-          </span>
+      {ocSidebar && (
+        <div
+          className="relay-oncall-hover"
+          onClick={() => setState({ surface: 'Desk', page: 'oncall' })}
+          style={{
+            border: '1px solid rgba(255,214,10,.28)',
+            background: 'rgba(255,214,10,.07)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '11px 12px',
+            cursor: 'pointer',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 7 }}>
+            <span
+              style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--yellow)', animation: 'relay-pulse 2.4s infinite' }}
+            />
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: 'var(--tracking-label)',
+                color: 'var(--yellow)',
+                textTransform: 'uppercase',
+              }}
+            >
+              On call · {ocTrack!.short}
+            </span>
+          </div>
+          <div style={{ fontSize: 13, fontWeight: 600 }}>{ocSidebar.name}</div>
+          <div style={{ fontSize: 11.5, color: 'var(--ink-gray)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {[ocContact!.ext || ocContact!.mobile, ocWeekLabel].filter(Boolean).join(' · ')}
+          </div>
         </div>
-        <div style={{ fontSize: 13, fontWeight: 600 }}>{ocSidebar.name}</div>
-        <div style={{ fontSize: 11.5, color: 'var(--ink-gray)', fontVariantNumeric: 'tabular-nums' }}>
-          {ocSidebar.ext} · {ocWeekLabel}
-        </div>
-      </div>
+      )}
 
       {/* SLA dashboard + Settings */}
       <div
@@ -182,24 +188,36 @@ export default function DeskSidebar() {
         {icons.chart}
         <span>SLA dashboard</span>
       </div>
-      <div
-        className="relay-soft-hover relay-hover-white"
-        onClick={() => setState({ surface: 'Desk', page: 'settings' })}
-        style={navRow}
-      >
-        {icons.gear}
-        <span>Settings</span>
-      </div>
+      {canAdmin && (
+        <div
+          className="relay-soft-hover relay-hover-white"
+          onClick={() => setState({ surface: 'Desk', page: 'settings' })}
+          style={navRow}
+        >
+          {icons.gear}
+          <span>Settings</span>
+        </div>
+      )}
 
       {/* Footer */}
       <div style={{ borderTop: '1px solid var(--hairline-soft)', paddingTop: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
-        <Avatar name="Marcus Cathey" size={AV.md} ring />
+        <Avatar name={me.name} size={AV.md} ring />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            Marcus Cathey
+            {me.name}
           </div>
-          <div style={{ fontSize: 11, color: 'var(--ink-gray)' }}>Desktop Support · Lead</div>
+          <div style={{ fontSize: 11, color: 'var(--ink-gray)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{me.title}</div>
         </div>
+        {mode === 'live' && (
+          <span
+            onClick={() => session.signOutUser()}
+            title="Sign out"
+            style={{ fontSize: 11.5, color: 'var(--ink-2)', cursor: 'pointer', flexShrink: 0 }}
+            className="relay-hover-white"
+          >
+            Sign out
+          </span>
+        )}
       </div>
     </div>
   )

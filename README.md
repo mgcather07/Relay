@@ -1,103 +1,86 @@
 # Relay
 
-A modern help desk ticketing system — a replacement for a legacy
-(BMC Footprints–era) system. Relay covers the whole loop: a ticket arrives by
-phone, email, walk-up or the portal → it is triaged, assigned and worked
-against an SLA clock → the requester tracks it themselves → managers see how
-the team performed.
+Help desk software for internal IT teams, sold as a multi-tenant web platform. Each customer
+company creates its own **workspace**; its people, tickets, settings, and audit trail live in
+Firestore under that workspace and are walled off from every other company by server-side
+security rules. Everything runs in the browser — any computer on any network, nothing to install.
 
-> **Note:** All data in this build is invented placeholder content for demo
-> purposes — no real names, phone numbers, tickets or metrics. State lives
-> in-memory in the browser; in production this becomes server state behind an
-> API (tickets, SLA policies, on-call rotation, settings, presence).
+**Live stack:** React 18 + TypeScript + Vite · Firebase Auth (email/password) · Cloud Firestore
+(real-time sync) · Firebase Hosting.
 
-## Three surfaces
+## How it works
 
-Switch between them from the top-bar segmented control:
+| Surface | Who | What |
+| --- | --- | --- |
+| Marketing site | Visitors | Landing page, features, pricing, sign-up, live demo |
+| Desk | Agents & admins | Queue with live SLA clocks, ticket detail, dashboard, on-call |
+| Portal | Requesters | Submit and track their own requests only |
+| Settings | Admins | Org profile, team & invite codes, channels/categories, logging & audit |
 
-| Surface     | Who                 | Contains                                                                                     |
-| ----------- | ------------------- | -------------------------------------------------------------------------------------------- |
-| **Desk**    | Agent, lead, admin  | Queue, ticket detail, new-ticket modal, assign, merge/link, command palette, SLA dashboard, on-call rotation, settings |
-| **Portal**  | End user            | My requests, submit a request, request timeline + comment                                    |
-| **Mobile**  | Agent on the floor  | My queue and live ticket detail in an iPhone frame                                            |
+- **Two modes, one codebase.** `demo` runs the original in-memory sample workspace (the
+  "Explore the live demo" button — nothing persists). `live` is the real product: all state in
+  Firestore, synced in real time to every signed-in browser.
+- **Joining a workspace.** The founder signs up and names the company. Relay generates two
+  invite codes — `AGT-…` (service desk) and `REQ-…` (portal). Codes are unguessable capability
+  tokens stored at `invites/{code}`; regenerating one revokes the old one instantly.
+- **Ticket IDs** (`RLY-1000`, `RLY-1001`, …) are allocated atomically via a Firestore
+  transaction on the org's counter.
+- **Security** is enforced in `firestore.rules`, not the client: staff see the whole queue,
+  requesters only documents where `requesterUid` is their own uid; settings writes are
+  admin-only; the audit trail is append-only for everyone.
 
-## Highlights
+## One-time activation (new deployment)
 
-- **Live presence** — who is viewing / typing a ticket is a first-class element.
-- **Live SLA clocks** — a 1-second tick drives every countdown and its color
-  transitions (on track → at risk → breach imminent → breached).
-- **One-click assignment** — the assign popover suggests the lightest qualified
-  tech, sorted by open load.
-- **On-call in the product** — a full rotation with escalation ladders, the next
-  8 weeks, holidays and fairness tracking.
-- **Command palette** — `⌘K` from anywhere; arrow keys + Enter to run.
+1. In the [Firebase console](https://console.firebase.google.com/project/relay-helpdesk/overview):
+   - **Firestore** → Create database (production mode, any location)
+   - **Authentication** → Get started → enable **Email/Password**
+2. Run `bash scripts/setup.sh` — registers the web app, writes `src/firebase-config.json`,
+   builds, and deploys hosting + rules.
 
-### Keyboard
+Until activation, the deployed site still serves the marketing page and the demo; sign-up
+explains that accounts aren't enabled yet.
 
-| Key             | Action                                            |
-| --------------- | ------------------------------------------------- |
-| `⌘K` / `Ctrl+K` | Toggle command palette (from anywhere)            |
-| `Esc`           | Close palette / modal / popover and clear selection |
-| `/`             | Open palette focused on search                    |
-| `c`             | New ticket                                         |
-| `e`             | Resolve the open ticket (detail view)             |
-| `↑` `↓` `↵`     | Move / run the palette selection                  |
-
-## Tech stack
-
-- **React 18** + **TypeScript**
-- **Vite** for dev server and build
-- **Sector design system** tokens (dark-first, Apple system typography) — see
-  `src/styles/tokens.css`. Components in `src/ds/` are recreated from the
-  design-system reference.
-
-## Getting started
+## Development
 
 ```bash
 npm install
-npm run dev      # http://localhost:5173
+npm run dev            # http://localhost:5173
+npx tsc --noEmit       # typecheck (vite build does not)
+npm run build          # production build → dist/
 ```
+
+To exercise the live mode locally without touching production data, start the emulators and
+open the app with `?emu=1`:
 
 ```bash
-npm run build    # outputs to dist/
-npm run preview  # preview the production build
+firebase emulators:start --only auth,firestore   # needs Java 21+
+# then visit http://localhost:5173/?emu=1
 ```
 
-## Project structure
+## Layout
 
 ```
 src/
-  ds/            Sector design-system components (Button, Badge, Avatar, Card,
-                 FilterChip, SegmentedControl)
+  main.tsx              entry — SessionProvider → AppRoot
+  AppRoot.tsx           routes: landing / onboarding / demo / live workspace
+  session.tsx           auth state, org membership, sign-up/in, create/join workspace
+  store.tsx             the app store; demo (in-memory) and live (Firestore) actions
+  marketing/            Landing (public site + auth), Onboarding (create/join org)
+  surfaces/             Desk pages, Portal, Mobile preview, Settings, chrome
+  overlays/             modals, command palette (⌘K), bulk bar, toasts
   lib/
-    data.ts      Seed tickets, agents, teams, KB, on-call tracks, holidays,
-                 and the SLA / rotation math
-    icons.tsx    Inline SVG icon set (SF Symbols in spirit)
-  overlays/      Command palette, new-ticket modal, assign popover, merge modal,
-                 bulk action bar, toast
-  surfaces/      TopBar, DeskSidebar, Queue, TicketDetail, Dashboard, Oncall,
-                 Settings, Portal, Mobile, IOSFrame
-  store.tsx      Central state + actions (React context)
-  styles/        Design tokens + global resets and keyframes
+    firebase.ts         SDK bootstrap (+ emulator hookup via ?emu=1)
+    model.ts            multi-tenant types, defaults, invite codes, sample tickets
+    data.ts             demo seed data + shared domain math (SLA, rotation)
+  ds/                   "Sector" design system components
+firestore.rules         tenant isolation & role enforcement
+scripts/setup.sh        one-time deployment activation
 ```
 
-## Deploying to Firebase Hosting
+## Not built yet (roadmap)
 
-`firebase.json` and `.firebaserc` are included. After creating a Firebase
-project and installing the CLI:
-
-```bash
-npm run build
-firebase login
-firebase use --add        # pick your project
-firebase deploy --only hosting
-```
-
-The `dist/` folder is served as a single-page app (all routes rewrite to
-`index.html`).
-
-## Not yet built (flagged as future work)
-
-Automation/trigger rules, CSAT survey screens, an SLA policy editor, per-agent
-notification preferences, and asset/CI management — all out of scope in the
-original design.
+- Real billing (Stripe) — pricing page currently routes Enterprise to a sales email
+- Email notifications on ticket updates
+- Knowledge base authoring for live workspaces (demo shows the concept)
+- LDAP/AD directory sync and SQL archive connectors (shown as Enterprise add-ons)
+- Custom domain (`relay.yourcompany.com`) via Firebase Hosting domain setup

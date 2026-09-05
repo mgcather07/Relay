@@ -2,13 +2,13 @@ import React from 'react'
 import { createRoot } from 'react-dom/client'
 import './styles/tokens.css'
 import './styles/global.css'
-import { RelayProvider } from './store'
-import App from './App'
+import { SessionProvider } from './session'
+import AppRoot from './AppRoot'
 
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <RelayProvider>
-      <App />
-    </RelayProvider>
+    <SessionProvider>
+      <AppRoot />
+    </SessionProvider>
   </React.StrictMode>,
 )

@@ -1,34 +1,29 @@
 import { useRelay } from '../store'
 import { Avatar, Badge, Button, Card, SegmentedControl } from '../ds'
 import {
-  tracks,
-  agents,
-  dutyManager,
   holidays,
-  contact,
   monday,
-  onCallFor,
   weekIndex,
   holidayIn,
   initials,
   range,
-  fmtDay,
   AV,
 } from '../lib/data'
 
 export default function Oncall() {
-  const { state, setState, toast } = useRelay()
+  const { state, setState, toast, tracks, agents, dutyManagerName, onCall, contactFor } = useRelay()
   const s = state
   const mon = monday(new Date(s.now))
+  const dutyManager = dutyManagerName
 
   const ocRange = range(mon)
   const ocHoliday = holidayIn(mon)
 
   /* This week cards */
   const ocCards = tracks.map((tr) => {
-    const oc = onCallFor(tr.id, mon)!
-    const e1 = contact(oc.next)
-    const e2 = contact(tr.esc)
+    const oc = { ...onCall(tr.id, mon)!, ...contactFor(onCall(tr.id, mon)!.name) }
+    const e1 = contactFor(oc.next)
+    const e2 = contactFor(tr.esc)
     return {
       track: tr.name,
       tint: tr.tint,
@@ -39,8 +34,8 @@ export default function Oncall() {
       startLabel: tr.late ? 'Mon 8:00 AM' : 'Mon 7:00 AM',
       weeksYtd: 4 + (weekIndex(mon) % 6) + tr.pool.length,
       ladder: [
-        { level: 'Escalation 1', name: oc.next, phone: e1.mobile },
-        { level: 'Escalation 2', name: tr.esc, phone: e2.mobile },
+        { level: 'Escalation 1', name: oc.next, phone: e1.mobile || e1.ext },
+        { level: 'Escalation 2', name: tr.esc, phone: e2.mobile || e2.ext },
       ],
       onAssign: () => {
         const a = agents.find((x) => x.name === oc.name)
@@ -64,7 +59,7 @@ export default function Oncall() {
       rowBg: w === 0 ? 'rgba(10,132,255,.10)' : w % 2 ? 'rgba(255,255,255,.02)' : 'transparent',
       labelColor: w === 0 ? 'var(--ink-1)' : 'var(--ink-2)',
       people: tracks.map((tr) => {
-        const n = onCallFor(tr.id, m)!.name
+        const n = onCall(tr.id, m)!.name
         return { name: n, initials: initials(n), tint: tr.tint, weight: w === 0 ? 600 : 400, chipBg: w === 0 ? 'rgba(255,255,255,.07)' : 'transparent' }
       }),
     })
@@ -72,6 +67,8 @@ export default function Oncall() {
 
   /* Holidays */
   const today = new Date(s.now)
+  const holTrackA = tracks[0]
+  const holTrackB = tracks[tracks.length - 1]
   const ocHolidays = holidays.map((h) => {
     const d = new Date(h.iso + 'T12:00:00')
     const hm = monday(d)
@@ -80,8 +77,8 @@ export default function Oncall() {
       name: h.name,
       rule: h.rule,
       date: d.toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' }),
-      helpdesk: onCallFor('hd', hm)!.name,
-      infra: onCallFor('net', hm)!.name,
+      helpdesk: holTrackA ? onCall(holTrackA.id, hm)!.name : '—',
+      infra: holTrackB ? onCall(holTrackB.id, hm)!.name : '—',
       state: past ? 'Passed' : 'Covered',
       stateTone: past ? 'neutral' : 'prime',
       opacity: past ? 0.45 : 1,
@@ -185,8 +182,8 @@ export default function Oncall() {
                     <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-.2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {c.name}
                     </div>
-                    <div style={{ fontSize: 12, color: 'var(--ink-2)', fontVariantNumeric: 'tabular-nums' }}>
-                      {c.mobile} · {c.ext}
+                    <div style={{ fontSize: 12, color: 'var(--ink-2)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {[c.mobile, c.ext].filter(Boolean).join(' · ')}
                     </div>
                   </div>
                 </div>
@@ -225,7 +222,9 @@ export default function Oncall() {
                 Escalation 3 · duty manager
               </div>
               <div style={{ fontSize: 14, fontWeight: 700 }}>{dutyManager}</div>
-              <div style={{ fontSize: 12, color: 'var(--ink-2)', fontVariantNumeric: 'tabular-nums' }}>{contact(dutyManager).mobile} · any group, any hour</div>
+              <div style={{ fontSize: 12, color: 'var(--ink-2)', fontVariantNumeric: 'tabular-nums' }}>
+                {[contactFor(dutyManager).mobile || contactFor(dutyManager).ext, 'any group, any hour'].filter(Boolean).join(' · ')}
+              </div>
             </div>
             <Button size="sm" variant="destructive" shape="pill" onClick={() => toast('Duty manager ' + dutyManager + ' paged — 5 minute acknowledgement', 'var(--red)')}>
               Page manager
@@ -299,8 +298,8 @@ export default function Oncall() {
             <div>Holiday</div>
             <div>When</div>
             <div>Observed date</div>
-            <div>Helpdesk on call</div>
-            <div>Net / Sec / Infra</div>
+            <div>{holTrackA ? holTrackA.short + ' on call' : 'On call'}</div>
+            <div>{holTrackB && holTrackB !== holTrackA ? holTrackB.short : '—'}</div>
             <div style={{ textAlign: 'right' }}>Cover</div>
           </div>
           {ocHolidays.map((h, i) => (

@@ -1,6 +1,6 @@
 import { useRelay } from '../store'
 import { Card, Avatar } from '../ds'
-import { sla, prioColor, agents, AV } from '../lib/data'
+import { sla, prioColor, AV } from '../lib/data'
 
 const CHART_RAW: [string, number, number][] = [
   ['Mon', 34, 2],
@@ -14,25 +14,58 @@ const CHART_RAW: [string, number, number][] = [
 const MAX_C = 52
 
 export default function Dashboard() {
-  const { state, setState, visible, agent, openDetail, slaWarnMinutes } = useRelay()
+  const { state, setState, visible, agent, openDetail, slaWarnMinutes, agents, mode } = useRelay()
   const s = state
 
   const metricsOpen = s.tickets.filter((x) => visible(x))
   const atRiskT = metricsOpen.filter((x) => x.due - s.now < 60 * 60000).sort((a, b) => a.due - b.due)
   const breached = metricsOpen.filter((x) => x.due - s.now <= 0).length
+  const resolvedAll = s.tickets.filter((x) => x.status === 'Resolved')
 
-  const metrics = [
-    { label: 'Open tickets', value: metricsOpen.length, unit: 'in queue', tint: 'var(--ink-1)', delta: '↓ 8 vs yesterday', deltaTint: 'var(--green)' },
-    { label: 'Past SLA', value: breached, unit: 'breached', tint: breached ? 'var(--red)' : 'var(--green)', delta: breached ? 'Escalate now' : 'Clean board', deltaTint: breached ? 'var(--red)' : 'var(--green)' },
-    { label: 'First response', value: '6m', unit: 'median', tint: 'var(--green)', delta: '↑ 22% faster than Footprints', deltaTint: 'var(--green)' },
-    { label: 'Satisfaction', value: '4.7', unit: '/ 5 · 96 replies', tint: 'var(--cyan)', delta: '+0.3 this month', deltaTint: 'var(--green)' },
-  ]
+  const metrics =
+    mode === 'demo'
+      ? [
+          { label: 'Open tickets', value: metricsOpen.length, unit: 'in queue', tint: 'var(--ink-1)', delta: '↓ 8 vs yesterday', deltaTint: 'var(--green)' },
+          { label: 'Past SLA', value: breached, unit: 'breached', tint: breached ? 'var(--red)' : 'var(--green)', delta: breached ? 'Escalate now' : 'Clean board', deltaTint: breached ? 'var(--red)' : 'var(--green)' },
+          { label: 'First response', value: '6m', unit: 'median', tint: 'var(--green)', delta: '↑ 22% faster than Footprints', deltaTint: 'var(--green)' },
+          { label: 'Satisfaction', value: '4.7', unit: '/ 5 · 96 replies', tint: 'var(--cyan)', delta: '+0.3 this month', deltaTint: 'var(--green)' },
+        ]
+      : [
+          { label: 'Open tickets', value: metricsOpen.length, unit: 'in queue', tint: 'var(--ink-1)', delta: metricsOpen.length ? 'Live count' : 'All clear', deltaTint: 'var(--green)' },
+          { label: 'Past SLA', value: breached, unit: 'breached', tint: breached ? 'var(--red)' : 'var(--green)', delta: breached ? 'Escalate now' : 'Clean board', deltaTint: breached ? 'var(--red)' : 'var(--green)' },
+          { label: 'Resolved', value: resolvedAll.length, unit: 'all time', tint: 'var(--green)', delta: 'Live count', deltaTint: 'var(--green)' },
+          { label: 'Unassigned', value: metricsOpen.filter((x) => !x.assignee).length, unit: 'waiting for pickup', tint: 'var(--orange)', delta: 'Assign from the queue', deltaTint: 'var(--ink-gray)' },
+        ]
 
-  const chart = CHART_RAW.map(([day, r, b]) => ({
-    day,
-    resolvedPct: Math.round((r / MAX_C) * 100),
-    breachedPct: Math.max(3, Math.round((b / MAX_C) * 100 * 3)),
-  }))
+  const chart =
+    mode === 'demo'
+      ? CHART_RAW.map(([day, r, b]) => ({
+          day,
+          resolvedPct: Math.round((r / MAX_C) * 100),
+          breachedPct: Math.max(3, Math.round((b / MAX_C) * 100 * 3)),
+        }))
+      : (() => {
+          const days: { day: string; resolved: number; breached: number }[] = []
+          for (let i = 6; i >= 0; i--) {
+            const d = new Date(s.now - i * 86400000)
+            const key = d.toDateString()
+            const dayResolved = resolvedAll.filter((x) => {
+              const ra = (x as any).resolvedAt
+              return ra && new Date(ra).toDateString() === key
+            })
+            days.push({
+              day: d.toLocaleDateString('en-US', { weekday: 'short' }),
+              resolved: dayResolved.length,
+              breached: dayResolved.filter((x) => ((x as any).resolvedAt || 0) > x.due).length,
+            })
+          }
+          const max = Math.max(1, ...days.map((d) => d.resolved))
+          return days.map((d) => ({
+            day: d.day,
+            resolvedPct: Math.round((d.resolved / max) * 100),
+            breachedPct: d.breached ? Math.max(6, Math.round((d.breached / max) * 100)) : 2,
+          }))
+        })()
 
   const atRisk = atRiskT.slice(0, 6).map((x) => {
     const sl = sla(x, s.now, slaWarnMinutes)
@@ -41,7 +74,8 @@ export default function Dashboard() {
   })
 
   const agentLoad = agents.map((a) => {
-    const n = s.tickets.filter((x) => x.assignee === a.id && visible(x)).length + a.load
+    const assigned = s.tickets.filter((x) => x.assignee === a.id && visible(x)).length
+    const n = mode === 'demo' ? assigned + a.load : assigned
     const pct = Math.min(100, (n / 18) * 100)
     return { name: a.name, team: a.team, pct, loadText: n + ' open', tint: n > 14 ? 'var(--red)' : n > 9 ? 'var(--orange)' : 'var(--green)' }
   })

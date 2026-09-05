@@ -1,6 +1,6 @@
 import { useRelay } from '../store'
 import { Avatar, Button, FilterChip, SegmentedControl } from '../ds'
-import { agents, tracks, catTrack, onCallFor, monday, AV } from '../lib/data'
+import { monday, AV } from '../lib/data'
 
 const sublabel: React.CSSProperties = {
   fontSize: 11.5,
@@ -12,7 +12,7 @@ const sublabel: React.CSSProperties = {
 }
 
 export default function NewTicketModal() {
-  const { state, setState, closeOverlays, createTicket, toast } = useRelay()
+  const { state, setState, closeOverlays, createTicket, toast, agents, tracks, onCall, trackForCategory, contactFor, isMe, nextTicketLabel } = useRelay()
   const s = state
   if (!s.composer) return null
 
@@ -25,9 +25,10 @@ export default function NewTicketModal() {
     ({ P1: '15m', P2: '30m', P3: '4h', P4: '1d' } as Record<string, string>)[nf.priority]
 
   const mon = monday(new Date(s.now))
-  const nfTrackId = catTrack[nf.category] || 'hd'
-  const nfTrack = tracks.find((t) => t.id === nfTrackId)!
-  const nfOc = onCallFor(nfTrackId, mon)!
+  const nfTrackId = trackForCategory(nf.category)
+  const nfTrack = tracks.find((t) => t.id === nfTrackId)
+  const nfOc = nfTrack ? onCall(nfTrackId, mon) : null
+  const nfOcContact = nfOc ? contactFor(nfOc.name) : null
 
   return (
     <div
@@ -64,7 +65,7 @@ export default function NewTicketModal() {
         <div style={{ padding: '16px 18px', borderBottom: '1px solid var(--hairline-soft)', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 16, fontWeight: 700 }}>New ticket</div>
-            <div style={{ fontSize: 12, color: 'var(--ink-gray)', marginTop: 2 }}>Logging on behalf of a caller · RLY-2842</div>
+            <div style={{ fontSize: 12, color: 'var(--ink-gray)', marginTop: 2 }}>Logging on behalf of a caller · {nextTicketLabel}</div>
           </div>
           <div onClick={closeOverlays} style={{ fontSize: 12, color: 'var(--ink-2)', cursor: 'pointer' }}>
             Esc
@@ -137,35 +138,37 @@ export default function NewTicketModal() {
           </div>
 
           {/* On-call strip */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', border: '1px solid rgba(255,214,10,.28)', background: 'rgba(255,214,10,.07)', borderRadius: 'var(--radius-lg)' }}>
-            <Avatar name={nfOc.name} size={AV.lg} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 'var(--tracking-label)', color: 'var(--yellow)', textTransform: 'uppercase', marginBottom: 3 }}>
-                On call this week · {nfTrack.name}
+          {nfOc && nfTrack && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', border: '1px solid rgba(255,214,10,.28)', background: 'rgba(255,214,10,.07)', borderRadius: 'var(--radius-lg)' }}>
+              <Avatar name={nfOc.name} size={AV.lg} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 'var(--tracking-label)', color: 'var(--yellow)', textTransform: 'uppercase', marginBottom: 3 }}>
+                  On call this week · {nfTrack.name}
+                </div>
+                <div style={{ fontSize: 13.5, fontWeight: 600 }}>{nfOc.name}</div>
+                <div style={{ fontSize: 11.5, color: 'var(--ink-gray)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {[nfOcContact!.ext, nfOcContact!.mobile].filter(Boolean).join(' · ')}
+                </div>
               </div>
-              <div style={{ fontSize: 13.5, fontWeight: 600 }}>{nfOc.name}</div>
-              <div style={{ fontSize: 11.5, color: 'var(--ink-gray)', fontVariantNumeric: 'tabular-nums' }}>
-                {nfOc.ext} · {nfOc.mobile}
-              </div>
+              <Button
+                size="sm"
+                variant="secondary"
+                shape="pill"
+                onClick={() => {
+                  const a = agents.find((x) => x.name === nfOc.name)
+                  setState({ nf: { ...nf, assignee: a ? a.id : nf.assignee } })
+                  toast(
+                    a
+                      ? 'Assigned to ' + nfOc.name + ' — on call for ' + nfTrack.name
+                      : nfOc.name + ' is on call but outside the helpdesk roster — paged instead',
+                    a ? 'var(--blue)' : 'var(--orange)',
+                  )
+                }}
+              >
+                Assign on-call
+              </Button>
             </div>
-            <Button
-              size="sm"
-              variant="secondary"
-              shape="pill"
-              onClick={() => {
-                const a = agents.find((x) => x.name === nfOc.name)
-                setState({ nf: { ...nf, assignee: a ? a.id : nf.assignee } })
-                toast(
-                  a
-                    ? 'Assigned to ' + nfOc.name + ' — on call for ' + nfTrack.name
-                    : nfOc.name + ' is on call but outside the helpdesk roster — paged instead',
-                  a ? 'var(--blue)' : 'var(--orange)',
-                )
-              }}
-            >
-              Assign on-call
-            </Button>
-          </div>
+          )}
 
           <div>
             <div style={sublabel}>Assign to</div>
@@ -188,7 +191,7 @@ export default function NewTicketModal() {
                     }}
                   >
                     <Avatar name={a.name} size={AV.sm} />
-                    <span style={{ fontSize: 12.5, color: sel ? 'var(--ink-1)' : 'var(--ink-2)' }}>{a.id === 'you' ? 'Me' : a.short}</span>
+                    <span style={{ fontSize: 12.5, color: sel ? 'var(--ink-1)' : 'var(--ink-2)' }}>{isMe(a.id) ? 'Me' : a.short}</span>
                   </div>
                 )
               })}

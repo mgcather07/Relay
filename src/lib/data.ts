@@ -154,13 +154,16 @@ export function monday(d: Date) {
 export function weekIndex(mon: Date) {
   return Math.floor((mon.getTime() - new Date(2026, 0, 5).getTime()) / 604800000)
 }
-export function onCallFor(trackId: string, mon: Date) {
-  const tr = tracks.find((t) => t.id === trackId)
-  if (!tr) return null
+export function onCallForIn(trackList: Track[], trackId: string, mon: Date) {
+  const tr = trackList.find((t) => t.id === trackId)
+  if (!tr || tr.pool.length === 0) return null
   const i = ((weekIndex(mon) % tr.pool.length) + tr.pool.length) % tr.pool.length
   const name = tr.pool[i]
   const next = tr.pool[(i + 1) % tr.pool.length]
   return Object.assign({ name, next, track: tr.name, tint: tr.tint, id: tr.id }, contact(name))
+}
+export function onCallFor(trackId: string, mon: Date) {
+  return onCallForIn(tracks, trackId, mon)
 }
 export function fmtDay(d: Date) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })

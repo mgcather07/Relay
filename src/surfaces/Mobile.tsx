@@ -5,13 +5,13 @@ import { sla, prioColor, prioTone, statusTone, AV, type Ticket } from '../lib/da
 import IOSDevice from './IOSFrame'
 
 export default function Mobile() {
-  const { state, viewTickets, slaWarnMinutes } = useRelay()
+  const { state, viewTickets, slaWarnMinutes, me, mode } = useRelay()
   const s = state
 
   const mineOpen = viewTickets('mine')
   const mobileRows = mineOpen.concat(viewTickets('unassigned')).slice(0, 6)
 
-  const mobT = s.tickets.find((x) => x.id === 'RLY-2841') || ({} as Ticket)
+  const mobT = mobileRows[0] || s.tickets[0] || ({} as Ticket)
   const mobSla = mobT.due ? sla(mobT, s.now, slaWarnMinutes) : { text: '—', color: 'var(--ink-2)' as string }
   const mobThread = (mobT.thread || []).slice(0, 4)
 
@@ -59,7 +59,7 @@ export default function Mobile() {
                   </div>
                   <div style={{ fontSize: 27, fontWeight: 800, letterSpacing: '-.6px', marginTop: 2 }}>{mineOpen.length} open</div>
                 </div>
-                <Avatar name="Marcus Cathey" size={AV.xl} ring />
+                <Avatar name={me.name} size={AV.xl} ring />
               </div>
               <div
                 style={{
@@ -164,23 +164,25 @@ export default function Mobile() {
                 <span style={{ fontSize: 12, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: mobSla.color }}>{mobSla.text} left</span>
               </div>
               <div style={{ fontSize: 19, fontWeight: 700, lineHeight: 1.25, marginTop: 8 }}>{mobT.subj}</div>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 7,
-                  marginTop: 10,
-                  padding: '5px 10px 5px 6px',
-                  borderRadius: 'var(--radius-pill)',
-                  background: 'rgba(52,199,89,.12)',
-                  border: '1px solid rgba(52,199,89,.3)',
-                  alignSelf: 'flex-start',
-                  width: 'fit-content',
-                }}
-              >
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--green)', animation: 'relay-pulse 2s infinite' }} />
-                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--green-bright)' }}>Dana R. is viewing · Tomás typing</span>
-              </div>
+              {mode === 'demo' && (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 7,
+                    marginTop: 10,
+                    padding: '5px 10px 5px 6px',
+                    borderRadius: 'var(--radius-pill)',
+                    background: 'rgba(52,199,89,.12)',
+                    border: '1px solid rgba(52,199,89,.3)',
+                    alignSelf: 'flex-start',
+                    width: 'fit-content',
+                  }}
+                >
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--green)', animation: 'relay-pulse 2s infinite' }} />
+                  <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--green-bright)' }}>Dana R. is viewing · Tomás typing</span>
+                </div>
+              )}
             </div>
             <div style={{ flex: 1, overflow: 'auto', padding: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
               {mobThread.map((m, i) => (

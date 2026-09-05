@@ -1,0 +1,99 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function authed() {
+      return request.auth != null;
+    }
+    function isMember(orgId) {
+      return authed() && exists(/databases/$(database)/documents/orgs/$(orgId)/members/$(request.auth.uid));
+    }
+    function myRole(orgId) {
+      return get(/databases/$(database)/documents/orgs/$(orgId)/members/$(request.auth.uid)).data.role;
+    }
+    function isStaff(orgId) {
+      return isMember(orgId) && myRole(orgId) in ['admin', 'agent'];
+    }
+    function isAdmin(orgId) {
+      return isMember(orgId) && myRole(orgId) == 'admin';
+    }
+
+    // Each user's own profile: which org they belong to.
+    match /users/{uid} {
+      allow read, write: if authed() && request.auth.uid == uid;
+    }
+
+    // Invite codes are unguessable capability tokens. A signed-in user may
+    // look one up by its exact code (no listing), and joins by presenting it.
+    match /invites/{code} {
+      allow get: if authed();
+      allow list: if false;
+      allow create: if authed()
+        && request.resource.data.orgId is string
+        && isAdmin(request.resource.data.orgId)
+        && request.resource.data.role in ['agent', 'requester'];
+      allow delete: if authed() && isAdmin(resource.data.orgId);
+    }
+
+    match /orgs/{orgId} {
+      // Only members may read their org. Anyone signed in may found one.
+      allow get: if isMember(orgId);
+      allow list: if false;
+      allow create: if authed()
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.seq is int
+        && request.resource.data.prefix is string;
+      // Admins manage settings; any member may advance the ticket counter.
+      allow update: if isAdmin(orgId)
+        || (isMember(orgId)
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['seq']));
+      allow delete: if false;
+
+      match /members/{uid} {
+        allow read: if isMember(orgId);
+        // Join as yourself: as the founder right after creating the org, or
+        // by presenting a live invite code whose role matches the doc.
+        allow create: if authed()
+          && request.auth.uid == uid
+          && (
+            (get(/databases/$(database)/documents/orgs/$(orgId)).data.ownerUid == request.auth.uid
+              && request.resource.data.role == 'admin')
+            ||
+            (request.resource.data.inviteCode is string
+              && exists(/databases/$(database)/documents/invites/$(request.resource.data.inviteCode))
+              && get(/databases/$(database)/documents/invites/$(request.resource.data.inviteCode)).data.orgId == orgId
+              && request.resource.data.role == get(/databases/$(database)/documents/invites/$(request.resource.data.inviteCode)).data.role)
+          );
+        // Admins manage roles (but nobody demotes the owner implicitly);
+        // members may update their own name/team, never their own role.
+        allow update: if isAdmin(orgId)
+          || (authed() && request.auth.uid == uid
+              && request.resource.data.role == resource.data.role);
+        allow delete: if isAdmin(orgId) || (authed() && request.auth.uid == uid);
+      }
+
+      match /tickets/{ticketId} {
+        // Staff see the whole queue; requesters only their own tickets.
+        allow read: if isStaff(orgId)
+          || (isMember(orgId) && resource.data.requesterUid == request.auth.uid);
+        // Staff log tickets for anyone; requesters only for themselves.
+        allow create: if isStaff(orgId)
+          || (isMember(orgId) && request.resource.data.requesterUid == request.auth.uid);
+        // Staff work tickets freely; a requester may only append to the
+        // conversation on their own ticket.
+        allow update: if isStaff(orgId)
+          || (isMember(orgId)
+              && resource.data.requesterUid == request.auth.uid
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['thread', 'msgs']));
+        allow delete: if isAdmin(orgId);
+      }
+
+      // Append-only: no edits, no deletes, not even by admins.
+      match /audit/{eventId} {
+        allow read: if isStaff(orgId);
+        allow create: if isStaff(orgId);
+        allow update, delete: if false;
+      }
+    }
+  }
+}

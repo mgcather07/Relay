@@ -149,7 +149,7 @@ export default function Queue() {
 }
 
 function Row({ t }: { t: Ticket }) {
-  const { state, setState, agent, openDetail, slaWarnMinutes } = useRelay()
+  const { state, setState, agent, openDetail, slaWarnMinutes, isMe } = useRelay()
   const s = state
   const slaR = sla(t, s.now, slaWarnMinutes)
   const a = agent(t.assignee)
@@ -280,7 +280,7 @@ function Row({ t }: { t: Ticket }) {
         >
           <Avatar name={a ? a.name : ''} size={AV.sm} />
           <span style={{ fontSize: 12, color: a ? 'var(--ink-1)' : 'var(--orange)', whiteSpace: 'nowrap' }}>
-            {a ? (a.id === 'you' ? 'Me' : a.short) : 'Unassigned'}
+            {a ? (isMe(a.id) ? 'Me' : a.short) : 'Unassigned'}
           </span>
         </div>
       </div>

@@ -1,9 +1,9 @@
 import { useRelay } from '../store'
 import { Avatar, Badge } from '../ds'
-import { agents, AV } from '../lib/data'
+import { AV } from '../lib/data'
 
 export default function AssignPopover() {
-  const { state, closeOverlays, assignTo, unassign } = useRelay()
+  const { state, closeOverlays, assignTo, unassign, agents } = useRelay()
   const s = state
   if (!s.assignFor) return null
 

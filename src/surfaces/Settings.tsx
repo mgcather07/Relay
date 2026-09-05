@@ -1,8 +1,15 @@
 import { useRelay } from '../store'
+import { useSession } from '../session'
 import { Avatar, Badge, Button } from '../ds'
-import { tracks, catTrack, agents, AV } from '../lib/data'
+import { AV } from '../lib/data'
+import type { Role } from '../lib/model'
 
-const SECTIONS = ['Organization', 'Channels & categories', 'Directory (LDAP)', 'Data & archive', 'Manager logging']
+const SECTIONS = ['Organization', 'Team & invites', 'Channels & categories', 'Directory (LDAP)', 'Data & archive', 'Manager logging']
+
+const TIMEZONES = [
+  'America/Chicago', 'America/New_York', 'America/Denver', 'America/Los_Angeles', 'America/Phoenix',
+  'UTC', 'Europe/London', 'Europe/Berlin', 'Europe/Paris', 'Asia/Kolkata', 'Asia/Singapore', 'Asia/Tokyo', 'Australia/Sydney',
+]
 
 const cardStyle: React.CSSProperties = {
   border: '1px solid var(--border-card)',
@@ -62,9 +69,16 @@ function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
 }
 
 export default function Settings() {
-  const { state, setState, toast, testConn, setLdap, setSql } = useRelay()
+  const {
+    state, setState, toast, testConn, setLdap, setSql,
+    mode, agents, tracks, trackForCategory, inviteCodes, regenerateInvite, setMemberRole, clearSampleData, audit: liveAudit, me,
+  } = useRelay()
+  const session = useSession()
   const s = state
   const sec = s.setSection
+  const live = mode === 'live'
+  const sampleCount = s.tickets.filter((t) => (t as any).sample).length
+  const tzOptions = TIMEZONES.includes(s.org.tz) ? TIMEZONES : [s.org.tz, ...TIMEZONES]
 
   const ldapStatus = s.ldap.status
   const ldapConn = {
@@ -93,6 +107,24 @@ export default function Settings() {
   }
 
   const scorecards = agents.map((a, i) => {
+    if (live) {
+      const closedTickets = s.tickets.filter((t) => t.assignee === a.id && t.status === 'Resolved')
+      const closed = closedTickets.length
+      const metCount = closedTickets.filter((t) => !(t as any).resolvedAt || (t as any).resolvedAt <= t.due).length
+      const met = closed ? Math.round((metCount / closed) * 100) : 100
+      return {
+        name: a.name,
+        team: a.team,
+        closed,
+        csat: '—',
+        first: '—',
+        met: closed ? met + '%' : '—',
+        metTint: met >= 95 ? 'var(--green)' : met >= 90 ? 'var(--orange)' : 'var(--red)',
+        metPct: closed ? met : 0,
+        reopen: '—',
+        reopenTint: 'var(--ink-gray)',
+      }
+    }
     const closed = 38 + ((a.name.length * 7 + i * 11) % 46)
     const met = 88 + ((a.name.length + i * 3) % 12)
     const reopen = (2 + ((i * 5 + a.name.length) % 7)) / 2
@@ -111,14 +143,36 @@ export default function Settings() {
     }
   })
 
-  const auditLog = [
-    { time: '2:33 PM', who: 'Dana Whitfield', what: 'replied on RLY-2841', tint: 'var(--blue)' },
-    { time: '2:26 PM', who: 'Tomás Vela', what: 'added an internal note on RLY-2841', tint: 'var(--yellow)' },
-    { time: '2:21 PM', who: 'Marcus Cathey', what: 'raised RLY-2841 to P1 and escalated to Applications', tint: 'var(--red)' },
-    { time: '2:14 PM', who: 'Relay auto-triage', what: 'created RLY-2841 from email and matched 3 duplicates', tint: 'var(--cyan)' },
-    { time: '1:52 PM', who: 'Priya Nair', what: 'resolved RLY-2818 · first touch 6m', tint: 'var(--green)' },
-    { time: '1:41 PM', who: 'Adrienne Kolb', what: 'exported the weekly SLA report', tint: 'var(--ink-gray)' },
-  ]
+  const auditLog = live
+    ? liveAudit.map((e) => ({
+        time: new Date(e.at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+        who: e.who,
+        what: e.what,
+        tint: e.tint,
+      }))
+    : [
+        { time: '2:33 PM', who: 'Dana Whitfield', what: 'replied on RLY-2841', tint: 'var(--blue)' },
+        { time: '2:26 PM', who: 'Tomás Vela', what: 'added an internal note on RLY-2841', tint: 'var(--yellow)' },
+        { time: '2:21 PM', who: 'Marcus Cathey', what: 'raised RLY-2841 to P1 and escalated to Applications', tint: 'var(--red)' },
+        { time: '2:14 PM', who: 'Relay auto-triage', what: 'created RLY-2841 from email and matched 3 duplicates', tint: 'var(--cyan)' },
+        { time: '1:52 PM', who: 'Priya Nair', what: 'resolved RLY-2818 · first touch 6m', tint: 'var(--green)' },
+        { time: '1:41 PM', who: 'Adrienne Kolb', what: 'exported the weekly SLA report', tint: 'var(--ink-gray)' },
+      ]
+
+  const exportAudit = () => {
+    if (!live) {
+      toast('Audit log exported to CSV — 4,218 events', 'var(--blue)')
+      return
+    }
+    const rows = [['when', 'who', 'what'], ...liveAudit.map((e) => [new Date(e.at).toISOString(), e.who, e.what])]
+    const csv = rows.map((r) => r.map((c) => '"' + String(c).replace(/"/g, '""') + '"').join(',')).join('\n')
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
+    a.download = 'relay-audit.csv'
+    a.click()
+    URL.revokeObjectURL(a.href)
+    toast('Audit log exported — ' + liveAudit.length + ' events', 'var(--blue)')
+  }
 
   const logToggleDefs = [
     { key: 'actions', label: 'Log every ticket action', desc: 'Who opened, assigned, replied, reopened or closed — immutable audit trail.' },
@@ -187,7 +241,7 @@ export default function Settings() {
                 <div>
                   <div style={fieldLabel}>Time zone</div>
                   <select value={s.org.tz} onChange={(e) => setState({ org: { ...s.org, tz: e.target.value } })} style={inputStyle}>
-                    {['America/Chicago', 'America/New_York', 'America/Denver', 'America/Los_Angeles'].map((o) => (
+                    {tzOptions.map((o) => (
                       <option key={o} value={o}>
                         {o}
                       </option>
@@ -197,28 +251,157 @@ export default function Settings() {
               </div>
             </div>
 
+            {live && sampleCount > 0 && (
+              <div style={cardStyle}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+                  <div style={{ flex: 1, minWidth: 220 }}>
+                    <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 3 }}>Sample tickets</div>
+                    <div style={{ fontSize: 12.5, color: 'var(--ink-2)' }}>
+                      {sampleCount} sample tickets were added when this workspace was created so the desk wasn’t empty.
+                    </div>
+                  </div>
+                  <Button size="sm" variant="secondary" shape="pill" onClick={clearSampleData}>
+                    Remove sample data
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {live ? (
+              <div style={cardStyle}>
+                <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>Connected systems</div>
+                {[
+                  ['Active Directory / LDAP sync', 'Map directory groups to Relay roles automatically'],
+                  ['SQL Server archive', 'Nightly export of closed tickets to your own database'],
+                ].map(([t, d]) => (
+                  <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '11px 0', borderTop: '1px solid var(--hairline-soft)' }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--ink-gray)', flexShrink: 0 }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13.5, fontWeight: 600 }}>{t}</div>
+                      <div style={{ fontSize: 11.5, color: 'var(--ink-gray)' }}>{d}</div>
+                    </div>
+                    <Badge tone="purple" style={{ whiteSpace: 'nowrap' }}>Enterprise</Badge>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={cardStyle}>
+                <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>Connected systems</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '11px 0', borderTop: '1px solid var(--hairline-soft)' }}>
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: ldapConn.dot, flexShrink: 0 }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13.5, fontWeight: 600 }}>Active Directory · {s.ldap.host}</div>
+                    <div style={{ fontSize: 11.5, color: 'var(--ink-gray)' }}>{ldapConn.meta}</div>
+                  </div>
+                  <Badge tone={ldapConn.tone as any} style={{ whiteSpace: 'nowrap' }}>
+                    {ldapConn.label}
+                  </Badge>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '11px 0', borderTop: '1px solid var(--hairline-soft)' }}>
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: sqlConn.dot, flexShrink: 0 }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13.5, fontWeight: 600 }}>SQL Server · {s.sql.host}</div>
+                    <div style={{ fontSize: 11.5, color: 'var(--ink-gray)' }}>{sqlConn.meta}</div>
+                  </div>
+                  <Badge tone="prime" style={{ whiteSpace: 'nowrap' }}>
+                    {sqlConn.label}
+                  </Badge>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Team & invites */}
+        {sec === 'Team & invites' && (
+          <>
+            {live && inviteCodes && (
+              <div style={cardStyle}>
+                <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 3 }}>Invite your company</div>
+                <div style={{ fontSize: 12.5, color: 'var(--ink-2)', marginBottom: 14 }}>
+                  Anyone with a code signs up at this site, picks “I have an invite code”, and lands in this
+                  workspace. Regenerating a code immediately kills the old one.
+                </div>
+                {(
+                  [
+                    ['agent', 'Agent code', 'Joins the service desk — queue, replies, on-call'],
+                    ['requester', 'Requester code', 'Opens the portal — employees who need help'],
+                  ] as const
+                ).map(([role, label, desc]) => (
+                  <div key={role} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', borderTop: '1px solid var(--hairline-soft)', flexWrap: 'wrap' }}>
+                    <div style={{ flex: 1, minWidth: 180 }}>
+                      <div style={{ fontSize: 13.5, fontWeight: 600 }}>{label}</div>
+                      <div style={{ fontSize: 11.5, color: 'var(--ink-gray)' }}>{desc}</div>
+                    </div>
+                    <code
+                      style={{ fontSize: 13, fontWeight: 700, letterSpacing: '.6px', padding: '7px 12px', background: 'var(--surface-inset)', border: '1px solid var(--hairline-soft)', borderRadius: 'var(--radius-md)', fontVariantNumeric: 'tabular-nums' }}
+                    >
+                      {inviteCodes[role]}
+                    </code>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      shape="pill"
+                      onClick={() => {
+                        navigator.clipboard?.writeText(inviteCodes[role]).then(
+                          () => toast(label + ' copied to the clipboard', 'var(--blue)'),
+                          () => toast('Couldn’t copy — select it by hand', 'var(--orange)'),
+                        )
+                      }}
+                    >
+                      Copy
+                    </Button>
+                    <Button size="sm" variant="ghost" shape="pill" onClick={() => regenerateInvite(role)}>
+                      Regenerate
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div style={cardStyle}>
-              <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>Connected systems</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '11px 0', borderTop: '1px solid var(--hairline-soft)' }}>
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: ldapConn.dot, flexShrink: 0 }} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13.5, fontWeight: 600 }}>Active Directory · {s.ldap.host}</div>
-                  <div style={{ fontSize: 11.5, color: 'var(--ink-gray)' }}>{ldapConn.meta}</div>
-                </div>
-                <Badge tone={ldapConn.tone as any} style={{ whiteSpace: 'nowrap' }}>
-                  {ldapConn.label}
-                </Badge>
+              <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 3 }}>People in this workspace</div>
+              <div style={{ fontSize: 12.5, color: 'var(--ink-2)', marginBottom: 8 }}>
+                {live
+                  ? 'Admins can change anyone’s role. Agents work the desk; requesters only see the portal.'
+                  : 'Sample roster — in a real workspace this lists everyone who joined with an invite code.'}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '11px 0', borderTop: '1px solid var(--hairline-soft)' }}>
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: sqlConn.dot, flexShrink: 0 }} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13.5, fontWeight: 600 }}>SQL Server · {s.sql.host}</div>
-                  <div style={{ fontSize: 11.5, color: 'var(--ink-gray)' }}>{sqlConn.meta}</div>
+              {(live ? session.members : null)?.map((m) => (
+                <div key={m.uid} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 0', borderTop: '1px solid var(--hairline-soft)', flexWrap: 'wrap' }}>
+                  <Avatar name={m.name} size={AV.md} />
+                  <div style={{ flex: 1, minWidth: 160 }}>
+                    <div style={{ fontSize: 13.5, fontWeight: 600 }}>
+                      {m.name}
+                      {m.uid === me.id && <span style={{ color: 'var(--ink-gray)', fontWeight: 500 }}> (you)</span>}
+                    </div>
+                    <div style={{ fontSize: 11.5, color: 'var(--ink-gray)' }}>{m.email}</div>
+                  </div>
+                  {m.uid === me.id ? (
+                    <Badge tone="accent">{m.role}</Badge>
+                  ) : (
+                    <select
+                      value={m.role}
+                      onChange={(e) => setMemberRole(m.uid, e.target.value as Role)}
+                      style={{ ...inputStyle, width: 140, height: 36, fontSize: 12.5 }}
+                    >
+                      {['admin', 'agent', 'requester'].map((r) => (
+                        <option key={r} value={r}>{r}</option>
+                      ))}
+                    </select>
+                  )}
                 </div>
-                <Badge tone="prime" style={{ whiteSpace: 'nowrap' }}>
-                  {sqlConn.label}
-                </Badge>
-              </div>
+              ))}
+              {!live &&
+                agents.map((a) => (
+                  <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 0', borderTop: '1px solid var(--hairline-soft)' }}>
+                    <Avatar name={a.name} size={AV.md} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13.5, fontWeight: 600 }}>{a.name}</div>
+                      <div style={{ fontSize: 11.5, color: 'var(--ink-gray)' }}>{a.team}</div>
+                    </div>
+                    <Badge tone="accent">agent</Badge>
+                  </div>
+                ))}
             </div>
           </>
         )}
@@ -281,7 +464,7 @@ export default function Settings() {
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
                 {s.cats.map((c) => {
-                  const track = tracks.find((t) => t.id === (catTrack[c] || 'hd'))?.name || 'Helpdesk'
+                  const track = tracks.find((t) => t.id === trackForCategory(c))?.name || 'Helpdesk'
                   return (
                     <div key={c} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px', background: 'var(--surface-inset)', border: '1px solid var(--hairline-soft)', borderRadius: 'var(--radius-md)' }}>
                       <span style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 500 }}>{c}</span>
@@ -326,7 +509,13 @@ export default function Settings() {
         )}
 
         {/* Directory (LDAP) */}
-        {sec === 'Directory (LDAP)' && (
+        {sec === 'Directory (LDAP)' && live && (
+          <EnterpriseUpsell
+            title="Directory sync (LDAP / Active Directory)"
+            body="Map your directory groups to Relay roles so nobody maintains a user list by hand. This connector ships with the Enterprise plan — your team joins with invite codes in the meantime (Settings → Team & invites)."
+          />
+        )}
+        {sec === 'Directory (LDAP)' && !live && (
           <>
             <div style={{ ...cardStyle, padding: 0, overflow: 'hidden' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 18px', background: 'rgba(52,199,89,.06)', borderBottom: '1px solid var(--hairline-soft)', flexWrap: 'wrap' }}>
@@ -387,7 +576,13 @@ export default function Settings() {
         )}
 
         {/* Data & archive */}
-        {sec === 'Data & archive' && (
+        {sec === 'Data & archive' && live && (
+          <EnterpriseUpsell
+            title="SQL Server archive"
+            body="A nightly job that moves closed tickets into a SQL database you own, with retention and purge windows you control. Ships with the Enterprise plan; until then every ticket stays available in Relay itself."
+          />
+        )}
+        {sec === 'Data & archive' && !live && (
           <>
             <div style={{ ...cardStyle, padding: 0, overflow: 'hidden' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 18px', background: 'rgba(52,199,89,.06)', borderBottom: '1px solid var(--hairline-soft)', flexWrap: 'wrap' }}>
@@ -502,7 +697,7 @@ export default function Settings() {
             </div>
 
             <div style={cardStyle}>
-              <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 3 }}>Agent scorecards · last 30 days</div>
+              <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 3 }}>{live ? 'Agent scorecards' : 'Agent scorecards · last 30 days'}</div>
               <div style={{ fontSize: 12.5, color: 'var(--ink-2)', marginBottom: 14 }}>Closed volume, first response, SLA met and reopen rate — the four numbers a lead actually asks for.</div>
               {scorecards.map((a) => (
                 <div key={a.name} style={{ padding: '13px 0', borderTop: '1px solid var(--hairline-soft)' }}>
@@ -541,7 +736,7 @@ export default function Settings() {
                   <div style={{ fontSize: 15, fontWeight: 700 }}>Audit trail</div>
                   <div style={{ fontSize: 12.5, color: 'var(--ink-2)', marginTop: 2 }}>Append-only. Nothing here can be edited or removed by an agent.</div>
                 </div>
-                <Button size="sm" variant="secondary" shape="pill" onClick={() => toast('Audit log exported to CSV — 4,218 events', 'var(--blue)')}>
+                <Button size="sm" variant="secondary" shape="pill" onClick={exportAudit}>
                   Export CSV
                 </Button>
               </div>
@@ -558,6 +753,21 @@ export default function Settings() {
           </>
         )}
       </div>
+    </div>
+  )
+}
+
+function EnterpriseUpsell({ title, body }: { title: string; body: string }) {
+  return (
+    <div style={{ ...cardStyle, border: '1px solid rgba(191,90,242,.3)', background: 'rgba(191,90,242,.06)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+        <Badge tone="purple">Enterprise add-on</Badge>
+        <div style={{ fontSize: 15, fontWeight: 700 }}>{title}</div>
+      </div>
+      <div style={{ fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.6, marginBottom: 14, textWrap: 'pretty' }}>{body}</div>
+      <a href="mailto:mgcather07@gmail.com?subject=Relay%20Enterprise" style={{ display: 'inline-block' }}>
+        <Button size="sm" shape="pill" variant="secondary">Contact sales</Button>
+      </a>
     </div>
   )
 }

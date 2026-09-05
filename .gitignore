@@ -16,3 +16,4 @@ firebase-debug.log
 
 # Design source (reference only, not shipped)
 _design_source
+firestore-debug.log

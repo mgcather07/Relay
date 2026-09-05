@@ -1,7 +1,7 @@
 import { useRelay } from '../store'
 import { Avatar, Badge, Button, Card, SegmentedControl } from '../ds'
 import { icons } from '../lib/icons'
-import { sla, prioColor, prioWord, prioTone, statusTone, dur, kb, AV, type Ticket } from '../lib/data'
+import { sla, prioColor, prioWord, prioTone, statusTone, dur, AV, type KBArticle, type Ticket } from '../lib/data'
 
 const VIEW_TITLES: Record<string, string> = {
   inbox: 'All open tickets',
@@ -12,7 +12,7 @@ const VIEW_TITLES: Record<string, string> = {
   resolved: 'Resolved',
 }
 
-function kbFor(tk: Ticket) {
+function kbFor(kb: KBArticle[], tk: Ticket) {
   const key = ((tk.category || '') + ' ' + (tk.subj || '')).toLowerCase()
   const hit = kb.filter((k) => k.tags.some((g) => key.indexOf(g) >= 0))
   return (hit.length ? hit : kb).slice(0, 3)
@@ -34,7 +34,7 @@ const MACROS = [
 ]
 
 export default function TicketDetail() {
-  const { state, setState, openTicket, agent, genThread, resolveOpen, sendReply, toast, slaWarnMinutes, openDetail } = useRelay()
+  const { state, setState, openTicket, agent, genThread, resolveOpen, sendReply, toast, slaWarnMinutes, openDetail, kb, me, isMe, mode } = useRelay()
   const s = state
   const t = openTicket() || ({} as Ticket)
   const osla = sla(t.due ? t : ({ due: Date.now(), window: 240, status: 'New' } as any), s.now, slaWarnMinutes)
@@ -48,18 +48,19 @@ export default function TicketDetail() {
   }))
   const internalMode = s.replyMode !== 'Public reply'
 
+  const priorCount = s.tickets.filter((x) => x.requester === t.requester).length
   const facts = [
     { k: 'Ticket', v: t.id },
     { k: 'Channel', v: t.channel },
     { k: 'Category', v: t.category },
     { k: 'Asset', v: t.asset || 'None linked' },
-    { k: 'Prior tickets', v: '3 in 90 days' },
+    { k: 'Prior tickets', v: mode === 'demo' ? '3 in 90 days' : priorCount + ' total' },
   ]
   const links = (t.links || []).map((id) => {
     const lt = s.tickets.find((x) => x.id === id) || ({} as Ticket)
     return { id, subj: lt.subj || id, meta: id + ' · ' + (lt.status || ''), tint: prioColor(lt.priority) }
   })
-  const kbSuggestions = kbFor(t)
+  const kbSuggestions = kbFor(kb, t)
 
   return (
     <div style={{ display: 'flex', minHeight: 0, alignItems: 'stretch', flexWrap: 'wrap' }}>
@@ -270,7 +271,7 @@ export default function TicketDetail() {
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10, fontSize: 11.5, color: 'var(--ink-gray)' }}>
             <span>Target {dur((t.window || 240) * 60000)}</span>
-            <span>First reply met in 7m</span>
+            <span>{mode === 'demo' ? 'First reply met in 7m' : prioWord(t.priority) + ' priority'}</span>
           </div>
         </Card>
 
@@ -282,7 +283,7 @@ export default function TicketDetail() {
             <Avatar name={oa ? oa.name : ''} size={AV.xl} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 14, fontWeight: 600 }}>
-                {oa ? (oa.id === 'you' ? 'Marcus Cathey (you)' : oa.name) : 'Unassigned'}
+                {oa ? (isMe(oa.id) ? me.name + ' (you)' : oa.name) : 'Unassigned'}
               </div>
               <div style={{ fontSize: 11.5, color: 'var(--ink-gray)' }}>{t.team}</div>
             </div>
@@ -338,6 +339,7 @@ export default function TicketDetail() {
           </div>
         </Card>
 
+        {kbSuggestions.length > 0 && (
         <Card caption="Suggested from knowledge base">
           {kbSuggestions.map((k) => (
             <div key={k.title} style={{ padding: '9px 0', borderBottom: '1px solid var(--hairline-soft)' }}>
@@ -358,6 +360,7 @@ export default function TicketDetail() {
             </div>
           ))}
         </Card>
+        )}
       </div>
     </div>
   )

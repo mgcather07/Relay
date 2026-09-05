@@ -16,10 +16,11 @@ import CommandPalette from './overlays/CommandPalette'
 import ToastView from './overlays/ToastView'
 
 export default function App() {
-  const { state } = useRelay()
-  const isDesktop = state.surface === 'Desk'
-  const isPortal = state.surface === 'Portal'
-  const isMobile = state.surface === 'Mobile'
+  const { state, canAdmin, isRequester } = useRelay()
+  const isDesktop = state.surface === 'Desk' && !isRequester
+  const isPortal = state.surface === 'Portal' || isRequester
+  const isMobile = state.surface === 'Mobile' && !isRequester
+  const page = state.page === 'settings' && !canAdmin ? 'queue' : state.page
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--app-bg)', display: 'flex', flexDirection: 'column' }}>
@@ -29,11 +30,11 @@ export default function App() {
         <div style={{ flex: 1, display: 'flex', alignItems: 'stretch', minHeight: 0 }}>
           <DeskSidebar />
           <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-            {state.page === 'queue' && <Queue />}
-            {state.page === 'detail' && <TicketDetail />}
-            {state.page === 'dashboard' && <Dashboard />}
-            {state.page === 'oncall' && <Oncall />}
-            {state.page === 'settings' && <Settings />}
+            {page === 'queue' && <Queue />}
+            {page === 'detail' && <TicketDetail />}
+            {page === 'dashboard' && <Dashboard />}
+            {page === 'oncall' && <Oncall />}
+            {page === 'settings' && <Settings />}
           </div>
         </div>
       )}

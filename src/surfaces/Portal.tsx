@@ -1,15 +1,18 @@
 import { useRelay } from '../store'
 import { Badge, Button, FilterChip, SegmentedControl } from '../ds'
 import { icons } from '../lib/icons'
-import { sla, prioColor, statusTone, dur, kb, type Ticket } from '../lib/data'
+import { sla, prioColor, statusTone, dur, type Ticket } from '../lib/data'
 
 export default function Portal() {
-  const { state, setState, agent, submitPortal, toast, slaWarnMinutes } = useRelay()
+  const { state, setState, agent, submitPortal, portalReply, slaWarnMinutes, me, mode, kb, genThread } = useRelay()
   const s = state
 
-  const portalMine = s.tickets.filter((x) => x.requester === 'Marcus Cathey')
+  const portalMine = s.tickets.filter((x) =>
+    mode === 'live' ? (x as any).requesterUid === me.id || x.requester === me.name : x.requester === me.name,
+  )
   const pdT = s.tickets.find((x) => x.id === s.portalOpenId) || portalMine[0] || ({} as Ticket)
   const pdSla = pdT.due ? sla(pdT, s.now, slaWarnMinutes) : { text: '—', color: 'var(--ink-2)' as string }
+  const openCount = portalMine.filter((x) => x.status !== 'Resolved').length
 
   const routeHint =
     'Routes to ' +
@@ -23,9 +26,11 @@ export default function Portal() {
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, marginBottom: 22 }}>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 'var(--tracking-label)', color: 'var(--ink-gray)', textTransform: 'uppercase' }}>
-              Relay help center
+              {s.org.name ? s.org.name + ' help center' : 'Relay help center'}
             </div>
-            <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-.5px', marginTop: 6 }}>Hey Marcus — 2 requests open</div>
+            <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-.5px', marginTop: 6 }}>
+              Hey {me.name.split(' ')[0]} — {openCount} request{openCount === 1 ? '' : 's'} open
+            </div>
             <div style={{ fontSize: 13.5, color: 'var(--ink-2)', marginTop: 4 }}>Track what you've asked for, or start something new.</div>
           </div>
           <Button shape="pill" size="sm" onClick={() => setState({ portalPage: 'new' })} icon={icons.plus}>
@@ -71,6 +76,14 @@ export default function Portal() {
                 </div>
               )
             })}
+            {portalMine.length === 0 && (
+              <div style={{ border: '1px dashed var(--hairline)', borderRadius: 'var(--radius-xl)', padding: '40px 20px', textAlign: 'center' }}>
+                <div style={{ fontSize: 15, fontWeight: 600 }}>Nothing yet</div>
+                <div style={{ fontSize: 13, color: 'var(--ink-2)', marginTop: 4 }}>
+                  When you ask for help it shows up here with live status.
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -141,7 +154,7 @@ export default function Portal() {
                 />
               </div>
 
-              {s.pf.subject.trim().length > 6 && (
+              {kb.length > 0 && s.pf.subject.trim().length > 6 && (
                 <div style={{ border: '1px solid rgba(100,210,255,.28)', background: 'rgba(100,210,255,.08)', borderRadius: 'var(--radius-lg)', padding: 14 }}>
                   <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: 'var(--tracking-label)', color: 'var(--cyan)', textTransform: 'uppercase', marginBottom: 9 }}>
                     This might solve it right now
@@ -187,21 +200,33 @@ export default function Portal() {
                 {
                   title: 'Request received',
                   time: pdT.opened || 'earlier',
-                  body: 'Relay routed this to ' + (pdT.team || 'Desktop Support') + ' and set a ' + dur((pdT.window || 1440) * 60000) + ' target.',
+                  body: 'Relay routed this to ' + (pdT.team || 'the service desk') + ' and set a ' + dur((pdT.window || 1440) * 60000) + ' target.',
                   tint: 'var(--blue)',
                 },
-                {
-                  title: 'Picked up',
-                  time: '+4m',
-                  body: (agent(pdT.assignee) || { name: 'A technician' }).name + ' is on it. You will get an email on every update.',
-                  tint: 'var(--cyan)',
-                },
-                {
-                  title: 'Waiting on you',
-                  time: '+1h',
-                  body: 'Can you confirm which desk you are using so we can stage the hardware? Reply below.',
-                  tint: 'var(--yellow)',
-                },
+                ...(pdT.assignee
+                  ? [{
+                      title: 'Picked up',
+                      time: '',
+                      body: (agent(pdT.assignee) || { name: 'A technician' }).name + ' is on it. Updates land here as they happen.',
+                      tint: 'var(--cyan)',
+                    }]
+                  : []),
+                ...((pdT.id ? (pdT.thread || genThread(pdT)) : [])
+                  .filter((m) => !m.internal)
+                  .map((m) => ({
+                    title: m.author === me.name ? 'You' : m.author,
+                    time: m.time,
+                    body: m.body,
+                    tint: m.author === me.name ? 'var(--ink-gray)' : 'var(--green)',
+                  }))),
+                ...(pdT.status === 'Waiting on user'
+                  ? [{
+                      title: 'Waiting on you',
+                      time: '',
+                      body: 'The technician needs something from you — reply below to keep things moving.',
+                      tint: 'var(--yellow)',
+                    }]
+                  : []),
               ].map((e, i) => (
                 <div key={i} style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', alignSelf: 'stretch', paddingTop: 4 }}>
@@ -234,15 +259,7 @@ export default function Portal() {
                   fontSize: 13.5,
                 }}
               />
-              <Button
-                shape="pill"
-                size="sm"
-                onClick={() => {
-                  if (!s.pdReply.trim()) return
-                  setState({ pdReply: '' })
-                  toast('Comment sent to the technician', 'var(--green)')
-                }}
-              >
+              <Button shape="pill" size="sm" onClick={portalReply}>
                 Send
               </Button>
             </div>
