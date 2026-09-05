@@ -10,7 +10,7 @@ function similarity(id: string) {
 }
 
 export default function MergeModal() {
-  const { state, setState, closeOverlays, openTicket, toast } = useRelay()
+  const { state, setState, closeOverlays, openTicket, linkOrMerge } = useRelay()
   const s = state
   if (!s.merge) return null
 
@@ -64,14 +64,7 @@ export default function MergeModal() {
             <div
               key={x.id}
               className="relay-soft-hover"
-              onClick={() => {
-                setState({ merge: false, selected: [] })
-                const verbPast = s.mergeMode
-                  .replace('Merge as duplicate', 'Merged')
-                  .replace('Link as related', 'Linked')
-                  .replace('Make child of', 'Nested')
-                toast(verbPast + ' into ' + x.id + ' — thread moved', 'var(--cyan)')
-              }}
+              onClick={() => linkOrMerge(x.id, s.mergeMode)}
               style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '11px 16px', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,.05)' }}
             >
               <span style={{ width: 4, height: 28, borderRadius: 2, background: prioColor(x.priority) }} />

@@ -69,7 +69,7 @@ export default function AssignPopover() {
                   {a.suggested && <Badge tone="accent">Suggested</Badge>}
                 </div>
                 <div style={{ fontSize: 11.5, color: 'var(--ink-gray)', marginTop: 2 }}>
-                  {a.team} · {a.statusText}
+                  {a.statusText ? a.team + ' · ' + a.statusText : a.team}
                 </div>
               </div>
               <div style={{ textAlign: 'right' }}>

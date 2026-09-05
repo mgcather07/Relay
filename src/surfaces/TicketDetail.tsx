@@ -199,7 +199,7 @@ export default function TicketDetail() {
               />
               <div style={{ flex: 1 }} />
               <span style={{ fontSize: 11.5, color: 'var(--ink-gray)' }}>
-                {internalMode ? 'Only the service desk sees this' : 'Goes to ' + (t.requester || 'the requester') + ' by email'}
+                {internalMode ? 'Only the service desk sees this' : (t.requester || 'The requester') + ' sees this on their portal'}
               </span>
             </div>
             <textarea

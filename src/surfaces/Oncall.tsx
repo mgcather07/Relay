@@ -11,7 +11,7 @@ import {
 } from '../lib/data'
 
 export default function Oncall() {
-  const { state, setState, toast, tracks, agents, dutyManagerName, onCall, contactFor } = useRelay()
+  const { state, setState, toast, tracks, agents, dutyManagerName, onCall, contactFor, mode } = useRelay()
   const s = state
   const mon = monday(new Date(s.now))
   const dutyManager = dutyManagerName
@@ -204,11 +204,15 @@ export default function Oncall() {
                   <Button size="sm" shape="pill" onClick={c.onAssign}>
                     New ticket
                   </Button>
-                  <Button size="sm" variant="secondary" shape="pill" onClick={c.onPage}>
-                    Page
-                  </Button>
+                  {mode === 'demo' && (
+                    <Button size="sm" variant="secondary" shape="pill" onClick={c.onPage}>
+                      Page
+                    </Button>
+                  )}
                   <div style={{ flex: 1 }} />
-                  <span style={{ fontSize: 11, color: 'var(--ink-3)', fontVariantNumeric: 'tabular-nums' }}>{c.weeksYtd} wk YTD</span>
+                  {mode === 'demo' && (
+                    <span style={{ fontSize: 11, color: 'var(--ink-3)', fontVariantNumeric: 'tabular-nums' }}>{c.weeksYtd} wk YTD</span>
+                  )}
                 </div>
               </div>
             ))}
@@ -226,9 +230,11 @@ export default function Oncall() {
                 {[contactFor(dutyManager).mobile || contactFor(dutyManager).ext, 'any group, any hour'].filter(Boolean).join(' · ')}
               </div>
             </div>
-            <Button size="sm" variant="destructive" shape="pill" onClick={() => toast('Duty manager ' + dutyManager + ' paged — 5 minute acknowledgement', 'var(--red)')}>
-              Page manager
-            </Button>
+            {mode === 'demo' && (
+              <Button size="sm" variant="destructive" shape="pill" onClick={() => toast('Duty manager ' + dutyManager + ' paged — 5 minute acknowledgement', 'var(--red)')}>
+                Page manager
+              </Button>
+            )}
           </div>
 
           <div style={{ marginTop: 14, padding: '14px 16px', border: '1px solid var(--border-card)', background: 'var(--surface-1)', borderRadius: 'var(--radius-xl)', fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.6, textWrap: 'pretty' }}>
@@ -274,7 +280,7 @@ export default function Oncall() {
             ))}
           </div>
 
-          <div style={{ marginTop: 14 }}>
+          {mode === 'demo' && <div style={{ marginTop: 14 }}>
             <Card caption="Rotation fairness · weeks carried this year">
               {ocFairness.map((f) => (
                 <div key={f.name} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '7px 0' }}>
@@ -287,7 +293,7 @@ export default function Oncall() {
                 </div>
               ))}
             </Card>
-          </div>
+          </div>}
         </div>
       )}
 

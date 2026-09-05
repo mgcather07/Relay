@@ -133,3 +133,19 @@ select option {
 .relay-remove-hover:hover {
   color: var(--red) !important;
 }
+
+/* Marketing nav: collapse the section links on phones so the sign-in /
+   get-started actions never wrap. */
+@media (max-width: 640px) {
+  .relay-marketing-navlinks {
+    display: none !important;
+  }
+}
+
+/* "Built by Rehtac" footer credit — muted, brightens on hover. */
+.relay-builtby:hover {
+  color: var(--ink-1) !important;
+}
+.relay-builtby:hover img {
+  opacity: 1 !important;
+}

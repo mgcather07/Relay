@@ -1,9 +1,7 @@
 import React from 'react'
 
 /* Minimal iOS device frame (bezel, dynamic island, status bar, home
-   indicator) — recreated from the prototype's ios-frame.jsx scaffolding.
-   Prototype scaffolding was flagged "do not ship"; this is a clean
-   reimplementation used only for the Mobile preview surface. */
+   indicator) used only for the Mobile preview surface. */
 
 function StatusBar({ dark = false, time = '9:41' }: { dark?: boolean; time?: string }) {
   const c = dark ? '#fff' : '#000'

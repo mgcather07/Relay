@@ -1,7 +1,8 @@
 /* ─────────────────────────────────────────────────────────────────────────
-   Seed data and domain helpers. All content is invented placeholder data —
-   no real names, numbers, tickets or metrics. In production these become
-   server state behind an API (see the handoff README).
+   Demo seed data and shared domain helpers. This content powers the
+   interactive demo workspace only — every value is invented placeholder
+   data. Live workspaces use real Firestore data (see store.tsx). The SLA,
+   rotation, and formatting helpers below are shared by both modes.
    ───────────────────────────────────────────────────────────────────────── */
 
 export interface Agent {
@@ -104,8 +105,6 @@ export const kb: KBArticle[] = [
   },
 ]
 
-export const categories = ['Applications', 'Infrastructure', 'Identity', 'Hardware', 'AV & Rooms', 'Onboarding']
-
 export const tracks: Track[] = [
   { id: 'ba', name: 'Business Apps', short: 'Business Apps', tint: 'var(--blue)', late: true, pool: ['Nora Vance', 'Desmond Kyle', 'Petra Ilves', 'Owen Marsh'], esc: 'Rhea Calloway' },
   { id: 'bas', name: 'Custom Applications', short: 'Custom Apps', tint: 'var(--indigo)', late: true, pool: ['Yusuf Demir', 'Clare Bexley', 'Tobin Marsh'], esc: 'Rhea Calloway' },
@@ -161,9 +160,6 @@ export function onCallForIn(trackList: Track[], trackId: string, mon: Date) {
   const name = tr.pool[i]
   const next = tr.pool[(i + 1) % tr.pool.length]
   return Object.assign({ name, next, track: tr.name, tint: tr.tint, id: tr.id }, contact(name))
-}
-export function onCallFor(trackId: string, mon: Date) {
-  return onCallForIn(tracks, trackId, mon)
 }
 export function fmtDay(d: Date) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })

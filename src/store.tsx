@@ -253,6 +253,7 @@ export interface RelayStore {
   createTicket: () => void
   submitPortal: () => void
   portalReply: () => void
+  linkOrMerge: (targetId: string, mergeMode: string) => void
   clearSampleData: () => void
   regenerateInvite: (role: 'agent' | 'requester') => void
   setMemberRole: (uid: string, role: Role) => void
@@ -375,14 +376,21 @@ export function RelayProvider({ mode, children }: { mode: Mode; children: React.
     const json = JSON.stringify(local)
     if (json === lastSettingsJson.current || !state.org.name) return
     const t = setTimeout(() => {
-      lastSettingsJson.current = json
       updateDoc(doc(db(), 'orgs', orgId), {
         name: local.org.name,
         'settings.org': local.org,
         'settings.channels': local.channels,
         'settings.cats': local.cats,
         'settings.logging': local.logging,
-      }).catch((e) => console.warn('settings save failed', e))
+      })
+        .then(() => {
+          // Only advance the sync marker once the write actually lands, so a
+          // failed save doesn't make the next remote snapshot revert the edit.
+          lastSettingsJson.current = json
+        })
+        .catch((e) => {
+          console.warn('settings save failed', e)
+        })
     }, 800)
     return () => clearTimeout(t)
   }, [mode, orgId, canAdmin, state.org, state.channels, state.cats, state.logging])
@@ -404,7 +412,7 @@ export function RelayProvider({ mode, children }: { mode: Mode; children: React.
       const parts = m.name.split(' ')
       const short = m.uid === me.id ? 'Me' : parts[0] + (parts[1] ? ' ' + parts[1][0] + '.' : '')
       const load = stateRef.current.tickets.filter((t) => t.assignee === m.uid && t.status !== 'Resolved').length
-      return { id: m.uid, name: m.name, short, team: m.team, load, avail: m.email }
+      return { id: m.uid, name: m.name, short, team: m.team, load, avail: '' }
     })
   }, [mode, liveStaff, me.id, state.tickets])
 
@@ -447,11 +455,13 @@ export function RelayProvider({ mode, children }: { mode: Mode; children: React.
 
   const contactFor = useCallback(
     (name: string) => {
+      // Demo has invented phone/ext. Live workspaces don't collect contact
+      // numbers yet, so return none rather than showing an email where a
+      // phone number is expected — on-call shows names and the schedule.
       if (mode === 'demo') return contact(name)
-      const m = session.members.find((x) => x.name === name)
-      return { ext: m?.email || '', mobile: '' }
+      return { ext: '', mobile: '' }
     },
-    [mode, session.members],
+    [mode],
   )
 
   const nextTicketLabel = mode === 'demo' ? 'RLY-2842' : (orgDoc ? orgDoc.prefix + '-' + orgDoc.seq : '…')
@@ -574,10 +584,12 @@ export function RelayProvider({ mode, children }: { mode: Mode; children: React.
     patch([t.id], { status: done ? 'In progress' : 'Resolved' })
     logAudit((done ? 'reopened ' : 'resolved ') + t.id, done ? 'var(--orange)' : 'var(--green)')
     toast(
-      done ? t.id + ' reopened' : t.id + ' resolved — requester notified, CSAT sent',
+      done
+        ? t.id + ' reopened'
+        : t.id + ' resolved' + (mode === 'demo' ? ' — requester notified, CSAT sent' : ''),
       done ? 'var(--orange)' : 'var(--green)',
     )
-  }, [openTicket, patch, toast, logAudit])
+  }, [openTicket, patch, toast, logAudit, mode])
 
   const assignTo = useCallback(
     (agentId: string) => {
@@ -795,6 +807,64 @@ export function RelayProvider({ mode, children }: { mode: Mode; children: React.
     toast('Comment sent to the technician', 'var(--green)')
   }, [mode, me, ticketRef, setState, toast, genThread])
 
+  const linkOrMerge = useCallback(
+    (targetId: string, mergeMode: string) => {
+      const s = stateRef.current
+      const sources = (s.selected.length > 1 ? s.selected : [s.openId]).filter((id) => id && id !== targetId)
+      if (!sources.length) {
+        setState({ merge: false, selected: [] })
+        return
+      }
+      const isMerge = mergeMode === 'Merge as duplicate'
+      const isChild = mergeMode === 'Make child of'
+      const now = Date.now()
+      const time = mode === 'live' ? fmtOpened(now) : 'now'
+      const noteBody = isMerge
+        ? 'Merged into ' + targetId + ' as a duplicate.'
+        : isChild
+          ? 'Set as a child of ' + targetId + '.'
+          : 'Linked to ' + targetId + '.'
+      const note = (): ThreadMessage => ({ author: me.name, role: me.title, time, internal: true, body: noteBody })
+
+      if (mode === 'live') {
+        sources.forEach((sid) => {
+          const upd: any = { links: arrayUnion(targetId), thread: arrayUnion(note()), msgs: increment(1) }
+          if (isMerge) {
+            upd.status = 'Resolved'
+            upd.resolvedAt = now
+          }
+          updateDoc(ticketRef(sid), upd).catch((e) => console.warn('link/merge failed', e))
+        })
+        updateDoc(ticketRef(targetId), { links: arrayUnion(...sources) }).catch(() => {})
+      } else {
+        setState((st) => ({
+          tickets: st.tickets.map((t) => {
+            if (sources.indexOf(t.id) >= 0) {
+              const base: Ticket = {
+                ...t,
+                links: Array.from(new Set([...(t.links || []), targetId])),
+                thread: (t.thread || genThread(t)).concat([note()]),
+                msgs: t.msgs + 1,
+              }
+              if (isMerge) base.status = 'Resolved'
+              return base
+            }
+            if (t.id === targetId) return { ...t, links: Array.from(new Set([...(t.links || []), ...sources])) }
+            return t
+          }),
+        }))
+      }
+      const verb = isMerge ? 'Merged' : isChild ? 'Nested' : 'Linked'
+      logAudit(verb.toLowerCase() + ' ' + sources.join(', ') + ' ' + (isMerge ? 'into' : 'to') + ' ' + targetId, 'var(--cyan)')
+      setState({ merge: false, selected: [] })
+      toast(
+        (isMerge ? 'Merged into ' : isChild ? 'Nested under ' : 'Linked to ') + targetId + (isMerge ? ' — duplicate resolved' : ''),
+        'var(--cyan)',
+      )
+    },
+    [mode, me, ticketRef, setState, toast, logAudit, genThread],
+  )
+
   const clearSampleData = useCallback(() => {
     if (mode !== 'live' || !orgId) return
     const samples = stateRef.current.tickets.filter((t) => (t as any).sample)
@@ -984,6 +1054,7 @@ export function RelayProvider({ mode, children }: { mode: Mode; children: React.
     createTicket,
     submitPortal,
     portalReply,
+    linkOrMerge,
     clearSampleData,
     regenerateInvite,
     setMemberRole,

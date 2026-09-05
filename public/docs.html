@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="theme-color" content="#07090D" />
 <meta name="description" content="Relay documentation — everything about setting up and running the Relay help desk: workspaces, roles, tickets, SLAs, the portal, on-call, administration, security, and troubleshooting." />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <title>Relay Docs</title>
 <style>
   :root{
@@ -91,7 +92,12 @@
   details[open] summary::before{transform:rotate(90deg)}
   details p,details ul{margin-top:0;padding-bottom:12px;font-size:13px}
 
-  footer{border-top:1px solid var(--hairline-soft);margin-top:60px;padding:22px 0 0;font-size:12px;color:var(--ink-3);display:flex;gap:16px;flex-wrap:wrap}
+  footer{border-top:1px solid var(--hairline-soft);margin-top:60px;padding:22px 0 40px;font-size:12px;color:var(--ink-3);display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+  .built-by{margin-left:auto;display:inline-flex;align-items:center;gap:6px;color:var(--ink-3);white-space:nowrap;text-decoration:none}
+  .built-by img{width:16px;height:16px;opacity:.8}
+  .built-by .bb-name{font-weight:600}
+  .built-by:hover{color:var(--ink-1)}
+  .built-by:hover img{opacity:1}
 
   @media (max-width: 900px){
     nav.sidebar{display:none}
@@ -588,7 +594,7 @@ firebase emulators:start --only auth,firestore   # needs Java 21+
     are on the roadmap.</p></details>
   <details><summary>Is there an API?</summary>
     <p>Not yet. If an integration matters to you, tell us which one —
-    <a href="mailto:mgcather07@gmail.com?subject=Relay%20API">sales@relay</a> routes to the team.</p></details>
+    <a href="mailto:mgcather07@gmail.com?subject=Relay%20API">email us</a> and it routes to the team.</p></details>
   <details><summary>How do I delete a ticket?</summary>
     <p>Admins can delete tickets (agents resolve instead, which preserves history). The three
     sample tickets can be removed in one click from Settings → Organization.</p></details>
@@ -617,6 +623,11 @@ firebase emulators:start --only auth,firestore   # needs Java 21+
   <a href="/">relay home</a>
   <a href="/#pricing">pricing</a>
   <a href="mailto:mgcather07@gmail.com?subject=Relay">contact</a>
+  <a class="built-by" href="https://rehtacsoftware.com" target="_blank" rel="noopener noreferrer" aria-label="Website built by Rehtac">
+    <span>Built by</span>
+    <img src="/img/rehtac-mark.png" alt="" width="16" height="16" />
+    <span class="bb-name">Rehtac</span>
+  </a>
 </footer>
 
 </main>

@@ -35,7 +35,7 @@ const PLANS = [
     per: 'per agent / month',
     tint: 'var(--blue)',
     features: ['Unlimited agents', 'Everything in Starter', 'Audit trail & scorecards', 'On-call rotations', 'Priority email support'],
-    cta: 'Start free trial',
+    cta: 'Start free',
     popular: true,
   },
   {
@@ -68,10 +68,12 @@ export default function Landing() {
       >
         <Logo />
         <div style={{ flex: 1 }} />
-        <NavLink href="#features">Features</NavLink>
-        <NavLink href="#pricing">Pricing</NavLink>
-        <NavLink href="/docs.html">Docs</NavLink>
-        <div onClick={() => setAuthMode('signin')} style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--ink-2)', cursor: 'pointer' }}>
+        <div className="relay-marketing-navlinks" style={{ display: 'flex', gap: 18 }}>
+          <NavLink href="#features">Features</NavLink>
+          <NavLink href="#pricing">Pricing</NavLink>
+          <NavLink href="/docs.html">Docs</NavLink>
+        </div>
+        <div onClick={() => setAuthMode('signin')} style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--ink-2)', cursor: 'pointer', whiteSpace: 'nowrap' }}>
           Sign in
         </div>
         <Button size="sm" shape="pill" onClick={startSignup}>Get started</Button>
@@ -218,14 +220,28 @@ export default function Landing() {
 
       {/* Footer */}
       <div style={{ borderTop: '1px solid var(--hairline-soft)', marginTop: 40 }}>
-        <div style={{ maxWidth: 1020, margin: '0 auto', padding: '26px 20px', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+        <div style={{ maxWidth: 1020, margin: '0 auto', padding: '26px 20px 14px', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
           <Logo small />
-          <span style={{ fontSize: 12, color: 'var(--ink-3)' }}>© {new Date().getFullYear()} Relay. Help desk software.</span>
+          <span style={{ fontSize: 12, color: 'var(--ink-3)' }}>© {new Date().getFullYear()} Relay — help desk software.</span>
           <div style={{ flex: 1 }} />
           <span onClick={session.enterDemo} style={{ fontSize: 12.5, color: 'var(--ink-2)', cursor: 'pointer' }}>Live demo</span>
           <a href="/docs.html" style={{ fontSize: 12.5, color: 'var(--ink-2)' }}>Docs</a>
           <a href="#pricing" style={{ fontSize: 12.5, color: 'var(--ink-2)' }}>Pricing</a>
           <a href="mailto:mgcather07@gmail.com?subject=Relay" style={{ fontSize: 12.5, color: 'var(--ink-2)' }}>Contact</a>
+        </div>
+        <div style={{ maxWidth: 1020, margin: '0 auto', padding: '0 20px 26px', display: 'flex', justifyContent: 'flex-end' }}>
+          <a
+            className="relay-builtby"
+            href="https://rehtacsoftware.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Website built by Rehtac"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: 'var(--ink-3)', whiteSpace: 'nowrap', textDecoration: 'none' }}
+          >
+            <span>Built by</span>
+            <img src="/img/rehtac-mark.png" alt="" width={16} height={16} style={{ opacity: 0.8 }} />
+            <span style={{ fontWeight: 600 }}>Rehtac</span>
+          </a>
         </div>
       </div>
 
@@ -400,7 +416,7 @@ function AuthCard({ mode, setMode }: { mode: Exclude<AuthMode, null>; setMode: (
 
         {!session.backendAvailable && (
           <div style={{ marginTop: 16, padding: '10px 12px', border: '1px solid rgba(255,159,10,.3)', background: 'rgba(255,159,10,.08)', borderRadius: 'var(--radius-md)', fontSize: 12, color: 'var(--orange)', lineHeight: 1.5 }}>
-            Accounts are disabled until this deployment is activated (see scripts/setup.sh). The live demo works without one.
+            Accounts aren’t available on this deployment yet. The live demo works without one — explore it any time.
           </div>
         )}
       </div>

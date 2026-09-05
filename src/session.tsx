@@ -45,7 +45,7 @@ export interface SessionMember extends MemberDoc {
 export interface Session {
   status: 'loading' | 'landing' | 'onboarding' | 'ready' | 'demo'
   backendAvailable: boolean
-  user: (User & { docName?: string }) | null
+  user: User | null
   orgId: string | null
   org: OrgDoc | null
   members: SessionMember[]
@@ -80,7 +80,6 @@ export function friendlyAuthError(e: any): string {
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [authSettled, setAuthSettled] = useState(!backendAvailable)
-  const [userDoc, setUserDoc] = useState<UserDoc | null>(null)
   const [userDocLoaded, setUserDocLoaded] = useState(false)
   const [org, setOrg] = useState<OrgDoc | null>(null)
   const [orgId, setOrgId] = useState<string | null>(null)
@@ -94,7 +93,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       setUser(u)
       setAuthSettled(true)
       if (!u) {
-        setUserDoc(null)
+        setUserDocLoaded(false)
         setOrg(null)
         setOrgId(null)
         setMembers([])
@@ -108,7 +107,6 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     setUserDocLoaded(false)
     return onSnapshot(doc(db(), 'users', user.uid), (snap) => {
       const d = (snap.data() as UserDoc | undefined) || null
-      setUserDoc(d)
       setOrgId(d?.orgId || null)
       setUserDocLoaded(true)
     })
@@ -225,7 +223,6 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   else if (!orgId) status = 'onboarding'
   else if (org && me) status = 'ready'
   else status = 'loading'
-  void userDoc
 
   const session: Session = {
     status,
