@@ -142,6 +142,7 @@
   <div class="nav-group">Trust</div>
   <a href="#security">Security &amp; data</a>
   <a href="#plans">Plans &amp; billing</a>
+  <a href="#editions">Deployment editions</a>
 
   <div class="nav-group">Operators</div>
   <a href="#deploy">Deployment</a>
@@ -469,6 +470,75 @@
   invite the whole company.</p>
   <p>During early access all workspaces run on Starter; to talk plans or Enterprise connectors,
   <a href="mailto:mgcather07@gmail.com?subject=Relay%20plans">contact sales</a>.</p>
+  <p>Weighing where Relay should run and where your records should live? See
+  <a href="#editions">Deployment editions</a>.</p>
+</section>
+
+<section id="editions">
+  <h2>Deployment editions</h2>
+  <p>Relay is offered two ways. Most companies — especially teams without dedicated
+  infrastructure staff — choose Cloud and are running the same day. Organizations with strict
+  residency or infrastructure mandates can run Relay on their own hardware through the
+  Enterprise program.</p>
+
+  <div class="table-wrap"><table>
+    <tr><th></th><th>Relay Cloud</th><th>Relay Self-Hosted (Enterprise)</th></tr>
+    <tr><td>Availability</td><td>Available now — sign up and go</td><td>Delivered through Enterprise onboarding — <a href="mailto:mgcather07@gmail.com?subject=Relay%20Self-Hosted">contact sales</a></td></tr>
+    <tr><td>Runs on</td><td>Relay's managed cloud (Google Cloud)</td><td>Your VMware vSphere / hypervisor or Docker host</td></tr>
+    <tr><td>Data lives in</td><td>Your isolated cloud workspace — optionally mirrored nightly to your own SQL database via the archive connector</td><td>Entirely on your servers, in a database you operate</td></tr>
+    <tr><td>Updates</td><td>Continuous — you always run the latest Relay</td><td>Versioned releases you apply on your schedule</td></tr>
+    <tr><td>Backups &amp; uptime</td><td>Managed by Relay</td><td>Owned by your team</td></tr>
+    <tr><td>Access</td><td>Any browser, anywhere</td><td>Any browser on your network (or via your VPN)</td></tr>
+    <tr><td>Pricing</td><td>Per agent, monthly (see <a href="#plans">Plans</a>)</td><td>Annual license, per agent</td></tr>
+  </table></div>
+
+  <h3>Keeping records in your own SQL database — without self-hosting</h3>
+  <p>Most “our data must live on our servers” requirements are about <strong>ownership and
+  retention</strong>, not about running the application. For that, Relay Cloud pairs with the
+  Enterprise <strong>SQL archive connector</strong>: a nightly job that exports closed tickets — threads,
+  timestamps, participants, audit events — into a SQL Server or PostgreSQL database that
+  <em>you</em> operate, with retention and purge windows you control. You get the compliance
+  checkbox and a queryable system of record; your team skips the patching, backups, and 2 a.m.
+  pages that come with running the app itself.</p>
+  <div class="callout tip"><span class="ico">💡</span><span><strong>Rule of thumb:</strong> if the
+  requirement is “we must hold a copy of our records,” Cloud + the archive connector covers it.
+  Choose Self-Hosted only when policy requires the <em>application itself</em> inside your
+  perimeter.</span></div>
+
+  <h3>Self-Hosted: how it ships</h3>
+  <p>The self-hosted edition is packaged for the environments IT teams already run, and is
+  installed together with your team during Enterprise onboarding:</p>
+  <ul>
+    <li><strong>Docker Compose</strong> — a single stack (Relay app, database, reverse proxy) on any
+    Linux VM. One command up, one command to upgrade.</li>
+    <li><strong>Virtual appliance (OVA)</strong> — a prebuilt Ubuntu LTS appliance for VMware
+    vSphere/ESXi wrapping the same stack, for shops that standardize on virtual appliances.</li>
+    <li><strong>External database option</strong> — point Relay at an existing SQL Server or PostgreSQL
+    instance instead of the bundled database.</li>
+  </ul>
+
+  <h3>Sizing guide</h3>
+  <div class="table-wrap"><table>
+    <tr><th>Deployment</th><th>Agents</th><th>vCPU</th><th>RAM</th><th>Disk</th></tr>
+    <tr><td>Small</td><td>up to 25</td><td>2</td><td>4 GB</td><td>50 GB SSD</td></tr>
+    <tr><td>Medium</td><td>up to 100</td><td>4</td><td>8 GB</td><td>100 GB SSD</td></tr>
+    <tr><td>Large</td><td>100+</td><td>8</td><td>16 GB</td><td>External SQL Server / PostgreSQL recommended</td></tr>
+  </table></div>
+
+  <h3>Environment requirements</h3>
+  <ul>
+    <li>VMware vSphere/ESXi 7+, or any Linux host running Docker Engine 24+</li>
+    <li>One internal DNS name (e.g. <code>relay.corp.local</code>) and a TLS certificate — the
+    appliance terminates HTTPS at its bundled reverse proxy</li>
+    <li>Outbound SMTP relay if you want password-reset and notification email</li>
+    <li>Clients need only a current browser (Chrome, Edge, Safari, Firefox) — nothing is
+    installed on workstations in either edition</li>
+  </ul>
+
+  <div class="callout note"><span class="ico">ℹ️</span><span>Self-Hosted is licensed annually per
+  agent and includes onboarding, upgrade support, and the directory-sync (LDAP/AD) connector.
+  <a href="mailto:mgcather07@gmail.com?subject=Relay%20Self-Hosted">Talk to sales</a> to scope an
+  installation.</span></div>
 </section>
 
 <section id="deploy">
