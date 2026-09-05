@@ -208,7 +208,10 @@ export default function Landing() {
             </div>
           ))}
         </div>
-        <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--ink-3)', marginTop: 18 }}>
+        <div style={{ textAlign: 'center', fontSize: 12.5, color: 'var(--ink-2)', marginTop: 18 }}>
+          An <b>agent</b> is anyone who works tickets on the desk. Employees who submit requests are always free — invite the whole company.
+        </div>
+        <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--ink-3)', marginTop: 8 }}>
           Early access: every workspace starts free on the Starter plan — upgrade whenever your team outgrows it.
         </div>
       </div>
